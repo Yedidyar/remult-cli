@@ -15,7 +15,7 @@ const cli = meow(
 		--dir the directory that the entities will
 
 	Examples
-	  $ remult --connectionString=postgres://user:pass@host:port/db-name --tables=users --tables=permissions
+	  $ remult --connectionString=postgres://user:pass@host:port/db-name --tables=users --tables=permissions --dir=./shared/entities
 `,
 	{
 		importMeta: import.meta,
