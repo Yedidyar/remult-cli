@@ -1,10 +1,15 @@
-import ***REMOVED***SqlDatabase, remult***REMOVED*** from 'remult';
+import ***REMOVED***createPostgresDataProvider***REMOVED*** from 'remult/postgres';
 
 export async function getEntityTypescriptPostgres(
 	table: string,
+	connectionString: string,
 	schema = 'public',
 ) ***REMOVED***
-	const command = SqlDatabase.getDb(remult).createCommand();
+	const command = (
+		await createPostgresDataProvider(***REMOVED***
+			connectionString,
+***REMOVED***)
+	).createCommand();
 
 	let cols = '';
 	let props = [];
@@ -26,61 +31,14 @@ export async function getEntityTypescriptPostgres(
       order by ordinal_position`,
 		)
 	).rows) ***REMOVED***
-		let decorator = '@Fields.string';
 		let decoratorArgs = '';
 
-		let type = '';
-		let defaultVal = "''";
-		switch (data_type) ***REMOVED***
-			case 'decimal':
-			case 'real':
-			case 'int':
-			case 'smallint':
-			case 'tinyint':
-			case 'bigint':
-			case 'float':
-			case 'numeric':
-			case 'NUMBER':
-			case 'money':
-				if (datetime_precision === 0) decorator = '@Fields.integer';
-				else decorator = '@Fields.number';
-				defaultVal = '0';
-				break;
-			case 'nchar':
-			case 'nvarchar':
-			case 'ntext':
-			case 'NVARCHAR2':
-			case 'text':
-			case 'varchar':
-			case 'VARCHAR2':
-				break;
-			case 'char':
-			case 'CHAR':
-				console.log(***REMOVED***
-					character_maximum_length,
-					column_default,
-					data_type,
-					column_name,
-		***REMOVED***);
-				if (character_maximum_length == 8 && column_default == "('00000000')") ***REMOVED***
-					decorator = '@Fields.dateOnly';
-					type = 'Date';
-		***REMOVED***
-				break;
-			case 'DATE':
-			case 'datetime':
-			case 'datetime2':
-			case 'timestamp without time zone':
-				decorator = '@Fields.date';
-				type = 'Date';
-				break;
-			case 'bit':
-				decorator = '@Fields.boolean';
-				break;
-			default:
-				console.log(data_type);
-				break;
-***REMOVED***
+		let ***REMOVED***decorator, defaultVal, type***REMOVED*** = handleDataType(***REMOVED***
+			column_default,
+			data_type,
+			datetime_precision,
+			character_maximum_length,
+***REMOVED***);
 
 		if (
 			column_name.toLocaleLowerCase() != column_name ||
@@ -104,4 +62,73 @@ export class $***REMOVED***table***REMOVED*** extends EntityBase ***REMOVED***` 
 		cols +
 		'\n***REMOVED***'.replace('  ', '');
 	return r;
+***REMOVED***
+
+interface Field ***REMOVED***
+	decorator: string;
+	defaultVal: string;
+	type: string;
+***REMOVED***
+
+function handleDataType(***REMOVED***
+	column_default,
+	data_type,
+	datetime_precision,
+	character_maximum_length,
+***REMOVED***: ***REMOVED***
+	column_default: string;
+	data_type: string;
+	datetime_precision: number;
+	character_maximum_length: number;
+***REMOVED***) ***REMOVED***
+	const res: Field = ***REMOVED***
+		decorator: '@Fields.string',
+		defaultVal: "''",
+		type: '',
+	***REMOVED***;
+	switch (data_type) ***REMOVED***
+		case 'decimal':
+		case 'real':
+		case 'int':
+		case 'smallint':
+		case 'tinyint':
+		case 'bigint':
+		case 'float':
+		case 'numeric':
+		case 'NUMBER':
+		case 'money':
+			if (datetime_precision === 0) res.decorator = '@Fields.integer';
+			else res.decorator = '@Fields.number';
+			res.defaultVal = '0';
+			break;
+		case 'nchar':
+		case 'nvarchar':
+		case 'ntext':
+		case 'NVARCHAR2':
+		case 'text':
+		case 'varchar':
+		case 'VARCHAR2':
+			break;
+		case 'char':
+		case 'CHAR':
+			if (character_maximum_length == 8 && column_default == "('00000000')") ***REMOVED***
+				res.decorator = '@Fields.dateOnly';
+				res.type = 'Date';
+	***REMOVED***
+			break;
+		case 'DATE':
+		case 'datetime':
+		case 'datetime2':
+		case 'timestamp without time zone':
+			res.decorator = '@Fields.date';
+			res.type = 'Date';
+			break;
+		case 'bit':
+			res.decorator = '@Fields.boolean';
+			break;
+		default:
+			break;
+	***REMOVED***
+
+	return res;
 ***REMOVED***

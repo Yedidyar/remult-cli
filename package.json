@@ -18,6 +18,7 @@
 	"dependencies": ***REMOVED***
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
+		"pg": "^8.11.2",
 		"react": "^18.2.0",
 		"remult": "^0.22.6"
 	***REMOVED***,
