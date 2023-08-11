@@ -14,10 +14,8 @@ export default function App({connectionString, tables, dir}: Props) {
 	}, []);
 
 	return (
-		<>
-			<Box marginTop={1}>
-				<Text dimColor>Completed</Text>
-			</Box>
-		</>
+		<Box marginTop={1}>
+			<Text dimColor>Completed</Text>
+		</Box>
 	);
 }
