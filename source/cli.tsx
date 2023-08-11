@@ -23,14 +23,15 @@ const cli = meow(
 				type: 'string',
 				isRequired: true,
 	***REMOVED***,
-			table: ***REMOVED***
+			tables: ***REMOVED***
 				type: 'string',
 				isRequired: true,
+				isMultiple: true,
 	***REMOVED***,
 ***REMOVED***,
 	***REMOVED***,
 );
 
 render(
-	<App connectionString=***REMOVED***cli.flags.connectionString***REMOVED*** table=***REMOVED***cli.flags.table***REMOVED*** />,
+	<App connectionString=***REMOVED***cli.flags.connectionString***REMOVED*** tables=***REMOVED***cli.flags.tables***REMOVED*** />,
 );

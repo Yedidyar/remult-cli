@@ -1,6 +1,21 @@
 import ***REMOVED***createPostgresDataProvider***REMOVED*** from 'remult/postgres';
+import ***REMOVED***writeFile, mkdir***REMOVED*** from 'fs/promises';
 
-export async function getEntityTypescriptPostgres(
+export function generateModels(
+	connectionString: string,
+	tables: string[],
+	dir = '.',
+) ***REMOVED***
+	mkdir(dir, ***REMOVED***recursive: true***REMOVED***);
+	Promise.all(
+		tables.map(async table => ***REMOVED***
+			const entity = await getEntityTypescriptPostgres(table, connectionString);
+			writeFile(`$***REMOVED***dir***REMOVED***/$***REMOVED***table***REMOVED***.ts`, entity, ***REMOVED***flag: 'w'***REMOVED***);
+***REMOVED***),
+	);
+***REMOVED***
+
+async function getEntityTypescriptPostgres(
 	table: string,
 	connectionString: string,
 	schema = 'public',
@@ -15,7 +30,7 @@ export async function getEntityTypescriptPostgres(
 	let props = [];
 	props.push('allowApiCrud: true');
 
-	let first: string = undefined!;
+	let first = true;
 	for (const ***REMOVED***
 		column_name,
 		column_default,
@@ -45,20 +60,26 @@ export async function getEntityTypescriptPostgres(
 			column_name == 'order'
 		)
 			decoratorArgs = `***REMOVED*** dbName: '"$***REMOVED***column_name***REMOVED***"' ***REMOVED***`;
-		if (!first) first = column_name;
-		cols += '\n\n  ' + decorator + `($***REMOVED***decoratorArgs***REMOVED***)\n  ` + column_name;
+
+		cols +=
+			`$***REMOVED***!first ? '\n' : ''***REMOVED***\n  ` +
+			decorator +
+			`($***REMOVED***decoratorArgs***REMOVED***)\n  ` +
+			column_name;
 		if (!defaultVal) ***REMOVED***
 			cols += '!';
 			cols += ': ';
 			cols += type;
 ***REMOVED***
 		if (defaultVal) cols += ' = ' + defaultVal;
+
+		if (first) first = false;
 	***REMOVED***
-	// props.push(`defaultOrderBy: ***REMOVED*** $***REMOVED***first***REMOVED***: "asc" ***REMOVED***`)
+
 	let r =
-		`import ***REMOVED*** Entity, Fields, EntityBase ***REMOVED*** from "remult";
-@Entity<$***REMOVED***table***REMOVED***>("$***REMOVED***table***REMOVED***", ***REMOVED*** \n  $***REMOVED***props.join(',\n  ')***REMOVED*** \n***REMOVED***)
-export class $***REMOVED***table***REMOVED*** extends EntityBase ***REMOVED***` +
+		`import ***REMOVED*** Entity, Fields, EntityBase ***REMOVED*** from "remult";\n
+@Entity<$***REMOVED***toPascalCase(table)***REMOVED***>("$***REMOVED***table***REMOVED***", ***REMOVED*** \n  $***REMOVED***props.join(',\n  ')***REMOVED*** \n***REMOVED***)
+export class $***REMOVED***toPascalCase(table)***REMOVED*** extends EntityBase ***REMOVED***` +
 		cols +
 		'\n***REMOVED***'.replace('  ', '');
 	return r;
@@ -114,6 +135,7 @@ function handleDataType(***REMOVED***
 			if (character_maximum_length == 8 && column_default == "('00000000')") ***REMOVED***
 				res.decorator = '@Fields.dateOnly';
 				res.type = 'Date';
+				res.defaultVal = 'new Date()';
 	***REMOVED***
 			break;
 		case 'DATE':
@@ -122,6 +144,7 @@ function handleDataType(***REMOVED***
 		case 'timestamp without time zone':
 			res.decorator = '@Fields.date';
 			res.type = 'Date';
+			res.defaultVal = 'new Date()';
 			break;
 		case 'bit':
 			res.decorator = '@Fields.boolean';
@@ -131,4 +154,16 @@ function handleDataType(***REMOVED***
 	***REMOVED***
 
 	return res;
+***REMOVED***
+
+function toPascalCase(string: string) ***REMOVED***
+	return `$***REMOVED***string***REMOVED***`
+		.toLowerCase()
+		.replace(new RegExp(/[-_]+/, 'g'), ' ')
+		.replace(new RegExp(/[^\w\s]/, 'g'), '')
+		.replace(
+			new RegExp(/\s+(.)(\w*)/, 'g'),
+			(_$1, $2, $3) => `$***REMOVED***$2.toUpperCase() + $3***REMOVED***`,
+		)
+		.replace(new RegExp(/\w/), s => s.toUpperCase());
 ***REMOVED***
