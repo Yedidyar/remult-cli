@@ -1,7 +1,7 @@
-***REMOVED***
+{
 	"extends": "@sindresorhus/tsconfig",
-	"compilerOptions": ***REMOVED***
+	"compilerOptions": {
 		"outDir": "dist"
-	***REMOVED***,
+	},
 	"include": ["source"]
-***REMOVED***
+}

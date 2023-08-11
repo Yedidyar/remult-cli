@@ -1,22 +1,23 @@
-import React, ***REMOVED***useEffect***REMOVED*** from 'react';
-import ***REMOVED***Box, Text***REMOVED*** from 'ink';
-import ***REMOVED***generateModels***REMOVED*** from './getEntityTypescriptPostgres.js';
+import React, {useEffect} from 'react';
+import {Box, Text} from 'ink';
+import {generateModels} from './getEntityTypescriptPostgres.js';
 
-type Props = ***REMOVED***
+type Props = {
 	tables: string[];
 	connectionString: string;
-***REMOVED***;
+	dir?: string;
+};
 
-export default function App(***REMOVED***connectionString, tables***REMOVED***: Props) ***REMOVED***
-	useEffect(() => ***REMOVED***
-		generateModels(connectionString, tables);
-	***REMOVED***, []);
+export default function App({connectionString, tables, dir}: Props) {
+	useEffect(() => {
+		generateModels(connectionString, tables, dir);
+	}, []);
 
 	return (
 		<>
-			<Box marginTop=***REMOVED***1***REMOVED***>
+			<Box marginTop={1}>
 				<Text dimColor>Completed</Text>
 			</Box>
 		</>
 	);
-***REMOVED***
+}

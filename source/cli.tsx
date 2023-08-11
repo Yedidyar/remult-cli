@@ -1,37 +1,45 @@
 #!/usr/bin/env node
 import React from 'react';
-import ***REMOVED***render***REMOVED*** from 'ink';
+import {render} from 'ink';
 import meow from 'meow';
 import App from './app.js';
 
 const cli = meow(
 	`
 	Usage
-	  $ cli
+	  $ remult
 
 	Options
-		--connectionString  Your connectionString
-		--table  Your table
+		--connectionString  Your connectionString only postgres is supported
+		--tables  you can pass multiple
+		--dir the directory that the entities will
 
 	Examples
-	  $ cli --connectionString=postgres://user:pass@host:port/db-name --table=users
+	  $ remult --connectionString=postgres://user:pass@host:port/db-name --tables=users --tables=permissions
 `,
-	***REMOVED***
+	{
 		importMeta: import.meta,
-		flags: ***REMOVED***
-			connectionString: ***REMOVED***
+		flags: {
+			connectionString: {
 				type: 'string',
 				isRequired: true,
-	***REMOVED***,
-			tables: ***REMOVED***
+			},
+			tables: {
 				type: 'string',
 				isRequired: true,
 				isMultiple: true,
-	***REMOVED***,
-***REMOVED***,
-	***REMOVED***,
+			},
+			dir: {
+				type: 'string',
+			},
+		},
+	},
 );
 
 render(
-	<App connectionString=***REMOVED***cli.flags.connectionString***REMOVED*** tables=***REMOVED***cli.flags.tables***REMOVED*** />,
+	<App
+		connectionString={cli.flags.connectionString}
+		tables={cli.flags.tables}
+		dir={cli.flags.dir}
+	/>,
 );

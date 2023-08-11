@@ -1,28 +1,28 @@
-***REMOVED***
+{
 	"name": "cli",
 	"version": "0.0.0",
 	"license": "MIT",
 	"bin": "dist/cli.js",
 	"type": "module",
-	"engines": ***REMOVED***
+	"engines": {
 		"node": ">=16"
-	***REMOVED***,
-	"scripts": ***REMOVED***
+	},
+	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"test": "prettier --check . && xo && ava"
-	***REMOVED***,
+	},
 	"files": [
 		"dist"
-***REMOVED***,
-	"dependencies": ***REMOVED***
+	],
+	"dependencies": {
 		"ink": "^4.1.0",
 		"meow": "^11.0.0",
 		"pg": "^8.11.2",
 		"react": "^18.2.0",
 		"remult": "^0.22.6"
-	***REMOVED***,
-	"devDependencies": ***REMOVED***
+	},
+	"devDependencies": {
 		"@sindresorhus/tsconfig": "^3.0.1",
 		"@types/react": "^18.0.32",
 		"@vdemedes/prettier-config": "^2.0.1",
@@ -36,22 +36,22 @@
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.3",
 		"xo": "^0.53.1"
-	***REMOVED***,
-	"ava": ***REMOVED***
-		"extensions": ***REMOVED***
+	},
+	"ava": {
+		"extensions": {
 			"ts": "module",
 			"tsx": "module"
-***REMOVED***,
+		},
 		"nodeArguments": [
 			"--loader=ts-node/esm"
-	***REMOVED***
-	***REMOVED***,
-	"xo": ***REMOVED***
+		]
+	},
+	"xo": {
 		"extends": "xo-react",
 		"prettier": true,
-		"rules": ***REMOVED***
+		"rules": {
 			"react/prop-types": "off"
-***REMOVED***
-	***REMOVED***,
+		}
+	},
 	"prettier": "@vdemedes/prettier-config"
-***REMOVED***
+}

@@ -1,29 +1,29 @@
-import ***REMOVED***createPostgresDataProvider***REMOVED*** from 'remult/postgres';
-import ***REMOVED***writeFile, mkdir***REMOVED*** from 'fs/promises';
+import {createPostgresDataProvider} from 'remult/postgres';
+import {writeFile, mkdir} from 'fs/promises';
 
 export function generateModels(
 	connectionString: string,
 	tables: string[],
 	dir = '.',
-) ***REMOVED***
-	mkdir(dir, ***REMOVED***recursive: true***REMOVED***);
+) {
+	mkdir(dir, {recursive: true});
 	Promise.all(
-		tables.map(async table => ***REMOVED***
+		tables.map(async table => {
 			const entity = await getEntityTypescriptPostgres(table, connectionString);
-			writeFile(`$***REMOVED***dir***REMOVED***/$***REMOVED***table***REMOVED***.ts`, entity, ***REMOVED***flag: 'w'***REMOVED***);
-***REMOVED***),
+			writeFile(`${dir}/${table}.ts`, entity, {flag: 'w'});
+		}),
 	);
-***REMOVED***
+}
 
 async function getEntityTypescriptPostgres(
 	table: string,
 	connectionString: string,
 	schema = 'public',
-) ***REMOVED***
+) {
 	const command = (
-		await createPostgresDataProvider(***REMOVED***
+		await createPostgresDataProvider({
 			connectionString,
-***REMOVED***)
+		})
 	).createCommand();
 
 	let cols = '';
@@ -31,83 +31,83 @@ async function getEntityTypescriptPostgres(
 	props.push('allowApiCrud: true');
 
 	let first = true;
-	for (const ***REMOVED***
+	for (const {
 		column_name,
 		column_default,
 		data_type,
 		datetime_precision,
 		character_maximum_length,
-	***REMOVED*** of (
+	} of (
 		await command.execute(
-			`select * from INFORMATION_SCHEMA.COLUMNS where table_schema=$***REMOVED***command.addParameterAndReturnSqlToken(
+			`select * from INFORMATION_SCHEMA.COLUMNS where table_schema=${command.addParameterAndReturnSqlToken(
 				schema,
-			)***REMOVED*** and table_name=$***REMOVED***command.addParameterAndReturnSqlToken(table)***REMOVED***
+			)} and table_name=${command.addParameterAndReturnSqlToken(table)}
 
       order by ordinal_position`,
 		)
-	).rows) ***REMOVED***
+	).rows) {
 		let decoratorArgs = '';
 
-		let ***REMOVED***decorator, defaultVal, type***REMOVED*** = handleDataType(***REMOVED***
+		let {decorator, defaultVal, type} = handleDataType({
 			column_default,
 			data_type,
 			datetime_precision,
 			character_maximum_length,
-***REMOVED***);
+		});
 
 		if (
 			column_name.toLocaleLowerCase() != column_name ||
 			column_name == 'order'
 		)
-			decoratorArgs = `***REMOVED*** dbName: '"$***REMOVED***column_name***REMOVED***"' ***REMOVED***`;
+			decoratorArgs = `{ dbName: '"${column_name}"' }`;
 
 		cols +=
-			`$***REMOVED***!first ? '\n' : ''***REMOVED***\n  ` +
+			`${!first ? '\n' : ''}\n  ` +
 			decorator +
-			`($***REMOVED***decoratorArgs***REMOVED***)\n  ` +
+			`(${decoratorArgs})\n  ` +
 			column_name;
-		if (!defaultVal) ***REMOVED***
+		if (!defaultVal) {
 			cols += '!';
 			cols += ': ';
 			cols += type;
-***REMOVED***
+		}
 		if (defaultVal) cols += ' = ' + defaultVal;
 
 		if (first) first = false;
-	***REMOVED***
+	}
 
 	let r =
-		`import ***REMOVED*** Entity, Fields, EntityBase ***REMOVED*** from "remult";\n
-@Entity<$***REMOVED***toPascalCase(table)***REMOVED***>("$***REMOVED***table***REMOVED***", ***REMOVED*** \n  $***REMOVED***props.join(',\n  ')***REMOVED*** \n***REMOVED***)
-export class $***REMOVED***toPascalCase(table)***REMOVED*** extends EntityBase ***REMOVED***` +
+		`import { Entity, Fields, EntityBase } from "remult";\n
+@Entity<${toPascalCase(table)}>("${table}", { \n  ${props.join(',\n  ')} \n})
+export class ${toPascalCase(table)} extends EntityBase {` +
 		cols +
-		'\n***REMOVED***'.replace('  ', '');
+		'\n}'.replace('  ', '');
 	return r;
-***REMOVED***
+}
 
-interface Field ***REMOVED***
+interface Field {
 	decorator: string;
 	defaultVal: string;
 	type: string;
-***REMOVED***
+}
 
-function handleDataType(***REMOVED***
+function handleDataType({
 	column_default,
 	data_type,
 	datetime_precision,
 	character_maximum_length,
-***REMOVED***: ***REMOVED***
+}: {
 	column_default: string;
 	data_type: string;
 	datetime_precision: number;
 	character_maximum_length: number;
-***REMOVED***) ***REMOVED***
-	const res: Field = ***REMOVED***
+}) {
+	const res: Field = {
 		decorator: '@Fields.string',
 		defaultVal: "''",
 		type: '',
-	***REMOVED***;
-	switch (data_type) ***REMOVED***
+	};
+	switch (data_type) {
 		case 'decimal':
 		case 'real':
 		case 'int':
@@ -132,11 +132,11 @@ function handleDataType(***REMOVED***
 			break;
 		case 'char':
 		case 'CHAR':
-			if (character_maximum_length == 8 && column_default == "('00000000')") ***REMOVED***
+			if (character_maximum_length == 8 && column_default == "('00000000')") {
 				res.decorator = '@Fields.dateOnly';
 				res.type = 'Date';
 				res.defaultVal = 'new Date()';
-	***REMOVED***
+			}
 			break;
 		case 'DATE':
 		case 'datetime':
@@ -151,19 +151,19 @@ function handleDataType(***REMOVED***
 			break;
 		default:
 			break;
-	***REMOVED***
+	}
 
 	return res;
-***REMOVED***
+}
 
-function toPascalCase(string: string) ***REMOVED***
-	return `$***REMOVED***string***REMOVED***`
+function toPascalCase(string: string) {
+	return `${string}`
 		.toLowerCase()
 		.replace(new RegExp(/[-_]+/, 'g'), ' ')
 		.replace(new RegExp(/[^\w\s]/, 'g'), '')
 		.replace(
 			new RegExp(/\s+(.)(\w*)/, 'g'),
-			(_$1, $2, $3) => `$***REMOVED***$2.toUpperCase() + $3***REMOVED***`,
+			(_$1, $2, $3) => `${$2.toUpperCase() + $3}`,
 		)
 		.replace(new RegExp(/\w/), s => s.toUpperCase());
-***REMOVED***
+}
