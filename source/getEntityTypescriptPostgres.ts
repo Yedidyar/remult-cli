@@ -6,13 +6,14 @@ import {
 	rmdirSync,
 	unlinkSync,
 	writeFileSync,
-} from 'fs';
-import {green, yellow} from 'kleur/colors';
-import {SqlDatabase, remult} from 'remult';
+} from "fs";
+import { green, yellow } from "kleur/colors";
+import { createPostgresDataProvider } from "remult/postgres";
+import { toCamelCase, toPascalCase, toTitleCase } from "./utils/case.js";
 
-const deleteFolderRecursive = path => {
+const deleteFolderRecursive = (path: string) => {
 	if (existsSync(path)) {
-		readdirSync(path).forEach(file => {
+		readdirSync(path).forEach((file) => {
 			const curPath = `${path}/${file}`;
 			if (lstatSync(curPath).isDirectory()) {
 				// Recursive call for subdirectories
@@ -28,44 +29,25 @@ const deleteFolderRecursive = path => {
 	}
 };
 
-const toPascalCase = (str: string) => {
-	return str
-		.replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
-		.replace(/^\w/, c => c.toUpperCase());
-};
-
-function toCamelCase(str) {
-	let words = toPascalCase(str).split('');
-	words[0] = words[0].toLowerCase();
-	return words.join('');
-}
-
-const toTitleCase = str => {
-	return str
-		.toLowerCase()
-		.replace(/_/g, ' ')
-		.replace(/\w+/g, match => match.charAt(0).toUpperCase() + match.slice(1));
-};
-
 function build_column(
 	decorator: string,
 	decoratorArgsValueType: string,
 	decoratorArgsOptions: string[],
-	column_name_tweak: string,
+	column_name_tweak: string | null,
 	column_name: any,
-	is_nullable: 'YES' | 'NO',
-	type: string,
-	defaultVal: string,
+	is_nullable: "YES" | "NO",
+	type: string | null,
+	defaultVal: string | null
 ) {
 	if (
 		column_name.toLocaleLowerCase() !== column_name ||
 		column_name_tweak ||
-		column_name === 'order'
+		column_name === "order"
 	) {
 		decoratorArgsOptions.unshift(`dbName: '"${column_name}"'`);
 	}
 
-	if (is_nullable === 'YES') {
+	if (is_nullable === "YES") {
 		decoratorArgsOptions.push(`allowNull: true`);
 	}
 
@@ -75,26 +57,26 @@ function build_column(
 	}
 
 	if (decoratorArgsOptions.length > 0) {
-		decoratorArgs.push(`{ ${decoratorArgsOptions.join(', ')} }`);
+		decoratorArgs.push(`{ ${decoratorArgsOptions.join(", ")} }`);
 	}
 
-	let current_col = `\t${decorator}(${decoratorArgs.join(', ')})\n\t${
+	let current_col = `\t${decorator}(${decoratorArgs.join(", ")})\n\t${
 		column_name_tweak ? column_name_tweak : column_name
 	}`;
 
-	if (is_nullable === 'YES') {
-		current_col += '?';
+	if (is_nullable === "YES") {
+		current_col += "?";
 	}
-	if (is_nullable !== 'YES' && !defaultVal) {
-		current_col += '!';
+	if (is_nullable !== "YES" && !defaultVal) {
+		current_col += "!";
 	}
 
 	if (type) {
-		current_col += ': ';
+		current_col += ": ";
 		current_col += type;
 	}
 	if (defaultVal) {
-		current_col += ' = ' + defaultVal;
+		current_col += " = " + defaultVal;
 	}
 
 	return current_col;
@@ -103,7 +85,7 @@ function build_column(
 class DbTable {
 	schema: string;
 	db_name: string;
-	graphql_key: string;
+	entity_name: string;
 	class_name: string;
 	foreign_key: string;
 
@@ -112,14 +94,14 @@ class DbTable {
 		this.db_name = db_name;
 		this.class_name = toPascalCase(db_name);
 
-		this.foreign_key = toCamelCase(db_name + 'Id');
+		this.foreign_key = toCamelCase(db_name + "Id");
 
-		this.graphql_key = toCamelCase(this.class_name) + 's';
-		if ([].includes(this.class_name)) {
+		this.entity_name = toCamelCase(this.class_name) + "s";
+		if (([] as string[]).includes(this.class_name)) {
 			// let's do here a real custom mapping
 			// TODO: provide a custom mapping?
-		} else if (this.graphql_key.endsWith('ys')) {
-			this.graphql_key = this.graphql_key.slice(0, -2) + 'ies';
+		} else if (this.entity_name.endsWith("ys")) {
+			this.entity_name = this.entity_name.slice(0, -2) + "ies";
 		}
 	}
 }
@@ -131,32 +113,37 @@ let report: {
 
 // TODO: everything optionnal
 export async function getEntitiesTypescriptPostgres(
-	schema = 'public',
+	connectionString: string,
+	schema = "public",
 	exclude = [
-		'pg_stat_statements',
-		'pg_stat_statements_info',
-		'_prisma_migrations',
+		"pg_stat_statements",
+		"pg_stat_statements_info",
+		"_prisma_migrations",
 	],
-	include = [],
-	withReport: 'no' | 'numbers' | 'full' = 'numbers',
+	include: string[] = [],
+	withReport: "no" | "numbers" | "full" = "full"
 ) {
-	report = {noTableMatchingforeignKey: [], typeCouldBeBetter: []};
-	const command = SqlDatabase.getDb(remult).createCommand();
+	report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
+	const command = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
 
 	const result = await command.execute(
-		`SELECT table_name, table_schema FROM information_schema.tables;`,
+		`SELECT table_name, table_schema FROM information_schema.tables;`
 	);
 
-	deleteFolderRecursive('./src/shared');
-	mkdirSync('./src/shared/');
-	const entities_path = './src/shared/entities/';
+	deleteFolderRecursive("./src/shared");
+	mkdirSync("./src/shared/", { recursive: true });
+	const entities_path = "./src/shared/entities/";
 	mkdirSync(entities_path);
-	const enums_path = './src/shared/enums/';
+	const enums_path = "./src/shared/enums/";
 	mkdirSync(enums_path);
 
 	const allTables: DbTable[] = [];
 	// build the list of classes first (for foreign keys link later)
-	result.rows.forEach(async c => {
+	result.rows.forEach(async (c) => {
 		const table = new DbTable(c.table_name, c.table_schema);
 		allTables.push(table);
 	});
@@ -165,18 +152,19 @@ export async function getEntitiesTypescriptPostgres(
 	await Promise.all(
 		allTables
 			// let's generate schema by schema
-			.filter(c => c.schema === schema)
-			.map(async table => {
+			.filter((c) => c.schema === schema)
+			.map(async (table) => {
 				try {
 					if (
 						!exclude.includes(table.db_name) &&
 						(include.length === 0 || include.includes(table.db_name))
 					) {
 						const data = await getEntityTypescriptPostgres(
+							connectionString,
 							enums_path,
 							allTables,
 							table,
-							schema,
+							schema
 						);
 						writeFileSync(`${entities_path}${table.class_name}.ts`, data);
 						tablesGenerated.push(table);
@@ -184,7 +172,7 @@ export async function getEntitiesTypescriptPostgres(
 				} catch (error) {
 					console.error(error);
 				}
-			}),
+			})
 	);
 
 	// write "_entities.ts"
@@ -192,67 +180,78 @@ export async function getEntitiesTypescriptPostgres(
 		`${entities_path}_entities.ts`,
 		`${tablesGenerated
 			.sort((a, b) => a.class_name.localeCompare(b.class_name))
-			.map(e => {
+			.map((e) => {
 				return `import { ${e.class_name} } from './${e.class_name}';`;
 			})
-			.join('\n')}
+			.join("\n")}
 
 export const entities = [
   ${tablesGenerated
 		.sort((a, b) => a.class_name.localeCompare(b.class_name))
-		.map(c => c.class_name)
-		.join(',\n  ')}
-]`,
+		.map((c) => c.class_name)
+		.join(",\n  ")}
+]`
 	);
 
-	if (withReport !== 'no') {
-		console.log(green(` === Remult cli ===`));
-		if (withReport === 'full') {
-			// No table matching found
-
-			console.log(
-				` - ${green(`ForeignKey, no table matching found`)}: 
-     ${yellow(
-				report.noTableMatchingforeignKey.map(c => `${c}`).join('\n     '),
-			)}`,
-			);
-			console.log(
-				` - ${green(`Type need to be manually typed`)}: 
-     ${yellow(report.typeCouldBeBetter.map(c => `${c}`).join('\n     '))}`,
-			);
-		} else if (withReport === 'numbers') {
-			console.log(
-				` - ${green(`ForeignKey, no table matching found`)}: ${yellow(
-					report.noTableMatchingforeignKey.length,
-				)}`,
-			);
-			console.log(
-				` - ${green(`Type need to be manually typed`)}: ${yellow(
-					report.typeCouldBeBetter.length,
-				)}`,
-			);
-		}
-		console.log(green(` ==================`));
+	if (withReport === "no") {
+		return;
 	}
+
+	console.log(green(` === Remult cli ===`));
+	if (withReport === "full") {
+		// No table matching found
+
+		console.log(
+			` - ${green(`ForeignKey, no table matching found`)}:
+     ${yellow(
+				report.noTableMatchingforeignKey.map((c) => `${c}`).join("\n     ")
+			)}`
+		);
+		console.log(
+			` - ${green(`Type need to be manually typed`)}:
+     ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n     "))}`
+		);
+	} else if (withReport === "numbers") {
+		console.log(
+			` - ${green(`ForeignKey, no table matching found`)}: ${yellow(
+				report.noTableMatchingforeignKey.length
+			)}`
+		);
+		console.log(
+			` - ${green(`Type need to be manually typed`)}: ${yellow(
+				report.typeCouldBeBetter.length
+			)}`
+		);
+	}
+	console.log(green(` ==================`));
 }
 
-export async function getEntityTypescriptPostgres(
+async function getEntityTypescriptPostgres(
+	connectionString: string,
 	enums_path: string,
 	tables: DbTable[],
 	table: DbTable,
-	schema: string,
+	schema: string
 ) {
-	const command = SqlDatabase.getDb(remult).createCommand();
-	const commandEnum = SqlDatabase.getDb(remult).createCommand();
+	const command = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
+	const commandEnum = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
 
 	let enums: Record<string, string[]> = {};
 	let foreign_key_founds: Record<string, string[]> = {};
 
 	let cols = [];
 	let props = [];
-	props.push('allowApiCrud: true');
+	props.push("allowApiCrud: true");
 	if (table.db_name !== table.class_name) {
-		if (table.schema === 'public' && table.db_name === 'user') {
+		if (table.schema === "public" && table.db_name === "user") {
 			// TODO fix dbName should be able to take a schema
 			props.push(`// dbName: '${table.db_name}'`);
 			props.push(`sqlExpression: 'public.${table.db_name}'`);
@@ -272,127 +271,128 @@ export async function getEntityTypescriptPostgres(
 		is_nullable,
 	} of (
 		await command.execute(
-			`SELECT * from INFORMATION_SCHEMA.COLUMNS 
-			WHERE 
+			`SELECT * from INFORMATION_SCHEMA.COLUMNS
+			WHERE
 				table_name=${command.addParameterAndReturnSqlToken(table.db_name)}
-				AND 
-				table_schema=${command.addParameterAndReturnSqlToken(schema)} 
-      ORDER BY ordinal_position`,
+				AND
+				table_schema=${command.addParameterAndReturnSqlToken(schema)}
+      ORDER BY ordinal_position`
 		)
 	).rows) {
-		let decorator = '@Fields.string';
+		let decorator = "@Fields.string";
 
-		let decoratorArgsValueType: string = '';
+		let decoratorArgsValueType: string = "";
 		let decoratorArgsOptions: string[] = [];
-		let type = 'string';
+		let type: string | null = "string";
 		let defaultVal = null;
-		let column_name_tweak: string = undefined;
+		let column_name_tweak: string | null = null;
 
 		switch (data_type) {
-			case 'decimal':
-			case 'real':
-			case 'int':
-			case 'integer':
-			case 'smallint':
-			case 'tinyint':
-				type = 'number';
+			case "decimal":
+			case "real":
+			case "int":
+			case "integer":
+			case "smallint":
+			case "tinyint":
+				type = "number";
 				defaultVal = null;
-				decorator = '@Fields.integer';
-				if (column_default?.startsWith('nextval')) {
-					decorator = '@Fields.autoIncrement';
+				decorator = "@Fields.integer";
+				if (column_default?.startsWith("nextval")) {
+					decorator = "@Fields.autoIncrement";
 				}
 				break;
-			case 'bigint':
-			case 'float':
-			case 'numeric':
-			case 'NUMBER':
-			case 'money':
-			case 'double precision':
-				type = 'number';
+			case "bigint":
+			case "float":
+			case "numeric":
+			case "NUMBER":
+			case "money":
+			case "double precision":
+				type = "number";
 				defaultVal = null;
 				if (datetime_precision === 0) {
-					decorator = '@Fields.integer';
+					decorator = "@Fields.integer";
 				} else {
-					decorator = '@Fields.number';
+					decorator = "@Fields.number";
 				}
 				// defaultVal = '0'
 				break;
-			case 'nchar':
-			case 'nvarchar':
-			case 'ntext':
-			case 'NVARCHAR2':
-			case 'text':
-			case 'varchar':
-			case 'VARCHAR2':
-				if (column_name === 'id') {
-					decorator = '@Fields.cuid';
-					type = 'string';
+			case "nchar":
+			case "nvarchar":
+			case "ntext":
+			case "NVARCHAR2":
+			case "text":
+			case "varchar":
+			case "VARCHAR2":
+				if (column_name === "id") {
+					decorator = "@Fields.cuid";
+					type = "string";
 					defaultVal = null;
 				}
-			case 'character varying':
 				break;
-			case 'char':
-			case 'CHAR':
+			case "character varying":
+				break;
+			case "char":
+			case "CHAR":
 				if (character_maximum_length == 8 && column_default == "('00000000')") {
-					decorator = '@Fields.dateOnly';
-					type = 'Date';
+					decorator = "@Fields.dateOnly";
+					type = "Date";
 				}
 				break;
-			case 'date':
-			case 'DATE':
-			case 'datetime':
-			case 'datetime2':
-			case 'timestamp without time zone':
-				if (column_name === 'createdAt' || column_name === 'dateCreated') {
-					decorator = '@Fields.createdAt';
+			case "date":
+			case "DATE":
+			case "datetime":
+			case "datetime2":
+			case "timestamp without time zone":
+				if (column_name === "createdAt" || column_name === "dateCreated") {
+					decorator = "@Fields.createdAt";
 					type = null; // will be inferred
-					defaultVal = 'new Date()';
-				} else if (column_name === 'updatedAt') {
-					decorator = '@Fields.updatedAt';
+					defaultVal = "new Date()";
+				} else if (column_name === "updatedAt") {
+					decorator = "@Fields.updatedAt";
 					type = null; // will be inferred
-					defaultVal = 'new Date()';
+					defaultVal = "new Date()";
 				} else {
-					decorator = '@Fields.date';
-					type = 'Date';
+					decorator = "@Fields.date";
+					type = "Date";
 					defaultVal = null;
 				}
 				break;
-			case 'bit':
-			case 'boolean':
-				decorator = '@Fields.boolean';
+			case "bit":
+			case "boolean":
+				decorator = "@Fields.boolean";
 				break;
-			case 'ARRAY':
-				decorator = '@Fields.json';
+			case "ARRAY":
+				decorator = "@Fields.json";
 				type = null;
-				defaultVal = '[]';
+				defaultVal = "[]";
 
 				// TODO: We can probably do better
 				report.typeCouldBeBetter.push(
-					`For table ["${table.db_name}"] column ["${column_name}"] => The type is not specified.`,
+					`For table ["${table.db_name}"] column ["${column_name}"] => The type is not specified.`
 				);
 				break;
-			case 'USER-DEFINED':
+			case "USER-DEFINED":
 				decorator = `@Field`;
 				decoratorArgsValueType += `() => ${toPascalCase(udt_name)}`;
 				type = null;
 				if (column_default === null) {
-					defaultVal = 'null';
+					defaultVal = "null";
 				} else {
 					defaultVal =
-						toPascalCase(udt_name) + '.' + column_default.split("'")[1];
+						toPascalCase(udt_name) + "." + column_default.split("'")[1];
 				}
 
 				const enumDef = await commandEnum.execute(
 					`SELECT t.typname, e.enumlabel
-						FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid  
+						FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
 						WHERE t.typname = '${udt_name}'
-						ORDER BY t.typname, e.enumlabel;`,
+						ORDER BY t.typname, e.enumlabel;`
 				);
 
-				enums[toPascalCase(udt_name)] = enumDef.rows.map(e => e.enumlabel);
+				enums[toPascalCase(udt_name)] = enumDef.rows.map((e) => e.enumlabel);
 				break;
 			default:
-				console.log('unmanaged', {
+				console.log("unmanaged", {
 					tableObj: JSON.stringify(table),
 					column_name,
 					data_type,
@@ -405,9 +405,9 @@ export async function getEntityTypescriptPostgres(
 
 		if (
 			!defaultOrderBy &&
-			(column_name === 'order' ||
-				column_name === 'name' ||
-				column_name === 'nom')
+			(column_name === "order" ||
+				column_name === "name" ||
+				column_name === "nom")
 		) {
 			defaultOrderBy = column_name;
 		}
@@ -420,33 +420,33 @@ export async function getEntityTypescriptPostgres(
 			column_name,
 			is_nullable,
 			type,
-			defaultVal,
+			defaultVal
 		);
 
 		// do we have a foreign key ?
 		const foreign_key =
-			column_name.endsWith('Id') &&
-			tables.find(t => t.foreign_key === column_name);
-		let current_col_fk: string = undefined;
+			column_name.endsWith("Id") &&
+			tables.find((t) => t.foreign_key === column_name);
+		let current_col_fk: string | undefined;
 		if (foreign_key) {
-			foreign_key_founds[foreign_key.class_name] =
-				foreign_key_founds[foreign_key.class_name];
+			// foreign_key_founds[foreign_key.class_name] =
+			// 	foreign_key_founds[foreign_key.class_name];
 
 			current_col_fk = build_column(
-				'@Field',
+				"@Field",
 				`() => ${foreign_key.class_name}`,
-				['lazy: true'],
-				column_name.replace(/Id$/, ''),
+				["lazy: true"],
+				column_name.replace(/Id$/, ""),
 				column_name,
-				'YES',
+				"YES",
 				foreign_key.class_name,
-				null,
+				null
 			);
 		}
 
-		if (column_name.endsWith('Id') && !foreign_key) {
+		if (column_name.endsWith("Id") && !foreign_key) {
 			report.noTableMatchingforeignKey.push(
-				`Table ["${table.db_name}"] Column ["${column_name}"]`,
+				`Table ["${table.db_name}"] Column ["${column_name}"]`
 			);
 			// TODO: We can do probably better with this query to get the list of constraints
 			// 			SELECT conrelid::regclass AS table_name,
@@ -474,9 +474,9 @@ export async function getEntityTypescriptPostgres(
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	function addLineIfNeeded(array: any[], format: (item) => string) {
+	function addLineIfNeeded(array: any[], format: (item: string[]) => string) {
 		if (array.length > 0) {
-			return `\n${array.map(format).join('\n')}`;
+			return `\n${array.map(format).join("\n")}`;
 		}
 		return ``;
 	}
@@ -485,15 +485,15 @@ export async function getEntityTypescriptPostgres(
 		`import { Entity, Field, Fields, EntityBase } from 'remult'` +
 		`${addLineIfNeeded(
 			Object.keys(foreign_key_founds),
-			c => `import { ${c} } from './${c}'`,
+			(c) => `import { ${c} } from './${c}'`
 		)}` +
 		`${addLineIfNeeded(
 			Object.keys(enums),
-			c => `import { ${c} } from '../enums/${c}'`,
+			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
-@Entity<${table.class_name}>('${table.graphql_key}', {\n\t${props.join(
-			',\n\t',
+@Entity<${table.class_name}>('${table.entity_name}', {\n\t${props.join(
+			",\n\t"
 		)}\n})
 export class ${table.class_name} {
 ${cols.join(`\n`)}}
@@ -509,12 +509,12 @@ ${cols.join(`\n`)}}
 @ValueListFieldType()
 export class ${enumName} {
   ${enumValues
-		.map(e => `static ${e} = new ${enumName}('${e}', '${toTitleCase(e)}')`)
-		.join('\n  ')}
-  
+		?.map((e) => `static ${e} = new ${enumName}('${e}', '${toTitleCase(e)}')`)
+		.join("\n  ")}
+
   constructor(public id: string, public caption: string) {}
 }
-`,
+`
 		);
 	}
 
