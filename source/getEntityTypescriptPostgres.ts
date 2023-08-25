@@ -77,9 +77,9 @@ async function getEntityTypescriptPostgres(
 	}
 
 	let r =
-		`import { Entity, Fields, EntityBase } from "remult";\n
-@Entity<${toPascalCase(table)}>("${table}", { \n  ${props.join(',\n  ')} \n})
-export class ${toPascalCase(table)} extends EntityBase {` +
+		`import { Entity, Fields } from "remult";\n
+@Entity("${table}", { \n  ${props.join(',\n  ')} \n})
+export class ${toPascalCase(table)} {` +
 		cols +
 		'\n}'.replace('  ', '');
 	return r;
