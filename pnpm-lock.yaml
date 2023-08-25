@@ -1,0 +1,188 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  '@clack/prompts':
+    specifier: ^0.7.0
+    version: 0.7.0
+  pg:
+    specifier: ^8.11.2
+    version: 8.11.3
+  remult:
+    specifier: ^0.22.6
+    version: 0.22.6
+
+devDependencies:
+  prettier:
+    specifier: ^2.8.7
+    version: 2.8.8
+
+packages:
+
+  /@clack/core@0.3.3:
+    resolution: {integrity: sha512-5ZGyb75BUBjlll6eOa1m/IZBxwk91dooBWhPSL67sWcLS0zt9SnswRL0l26TVdBhb0wnWORRxUn//uH6n4z7+A==}
+    dependencies:
+      picocolors: 1.0.0
+      sisteransi: 1.0.5
+    dev: false
+
+  /@clack/prompts@0.7.0:
+    resolution: {integrity: sha512-0MhX9/B4iL6Re04jPrttDm+BsP8y6mS7byuv0BvXgdXhbV5PdlsHt55dvNsuBCPZ7xq1oTAOOuotR9NFbQyMSA==}
+    dependencies:
+      '@clack/core': 0.3.3
+      picocolors: 1.0.0
+      sisteransi: 1.0.5
+    dev: false
+    bundledDependencies:
+      - is-unicode-supported
+
+  /@noble/hashes@1.3.2:
+    resolution: {integrity: sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==}
+    engines: {node: '>= 16'}
+    dev: false
+
+  /@paralleldrive/cuid2@2.2.2:
+    resolution: {integrity: sha512-ZOBkgDwEdoYVlSeRbYYXs0S9MejQofiVYoTbKzy/6GQa39/q5tQU2IX46+shYnUkpEl3wc+J6wRlar7r2EK2xA==}
+    dependencies:
+      '@noble/hashes': 1.3.2
+    dev: false
+
+  /buffer-writer@2.0.0:
+    resolution: {integrity: sha512-a7ZpuTZU1TRtnwyCNW3I5dc0wWNC3VR9S++Ewyk2HHZdrO3CQJqSpd+95Us590V6AL7JqUAH2IwZ/398PmNFgw==}
+    engines: {node: '>=4'}
+    dev: false
+
+  /packet-reader@1.0.0:
+    resolution: {integrity: sha512-HAKu/fG3HpHFO0AA8WE8q2g+gBJaZ9MG7fcKk+IJPLTGAD6Psw4443l+9DGRbOIh3/aXr7Phy0TjilYivJo5XQ==}
+    dev: false
+
+  /pg-cloudflare@1.1.1:
+    resolution: {integrity: sha512-xWPagP/4B6BgFO+EKz3JONXv3YDgvkbVrGw2mTo3D6tVDQRh1e7cqVGvyR3BE+eQgAvx1XhW/iEASj4/jCWl3Q==}
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /pg-connection-string@2.6.2:
+    resolution: {integrity: sha512-ch6OwaeaPYcova4kKZ15sbJ2hKb/VP48ZD2gE7i1J+L4MspCtBMAx8nMgz7bksc7IojCIIWuEhHibSMFH8m8oA==}
+    dev: false
+
+  /pg-int8@1.0.1:
+    resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
+    engines: {node: '>=4.0.0'}
+    dev: false
+
+  /pg-pool@3.6.1(pg@8.11.3):
+    resolution: {integrity: sha512-jizsIzhkIitxCGfPRzJn1ZdcosIt3pz9Sh3V01fm1vZnbnCMgmGl5wvGGdNN2EL9Rmb0EcFoCkixH4Pu+sP9Og==}
+    peerDependencies:
+      pg: '>=8.0'
+    dependencies:
+      pg: 8.11.3
+    dev: false
+
+  /pg-protocol@1.6.0:
+    resolution: {integrity: sha512-M+PDm637OY5WM307051+bsDia5Xej6d9IR4GwJse1qA1DIhiKlksvrneZOYQq42OM+spubpcNYEo2FcKQrDk+Q==}
+    dev: false
+
+  /pg-types@2.2.0:
+    resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
+    engines: {node: '>=4'}
+    dependencies:
+      pg-int8: 1.0.1
+      postgres-array: 2.0.0
+      postgres-bytea: 1.0.0
+      postgres-date: 1.0.7
+      postgres-interval: 1.2.0
+    dev: false
+
+  /pg@8.11.3:
+    resolution: {integrity: sha512-+9iuvG8QfaaUrrph+kpF24cXkH1YOOUeArRNYIxq1viYHZagBxrTno7cecY1Fa44tJeZvaoG+Djpkc3JwehN5g==}
+    engines: {node: '>= 8.0.0'}
+    peerDependencies:
+      pg-native: '>=3.0.1'
+    peerDependenciesMeta:
+      pg-native:
+        optional: true
+    dependencies:
+      buffer-writer: 2.0.0
+      packet-reader: 1.0.0
+      pg-connection-string: 2.6.2
+      pg-pool: 3.6.1(pg@8.11.3)
+      pg-protocol: 1.6.0
+      pg-types: 2.2.0
+      pgpass: 1.0.5
+    optionalDependencies:
+      pg-cloudflare: 1.1.1
+    dev: false
+
+  /pgpass@1.0.5:
+    resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
+    dependencies:
+      split2: 4.2.0
+    dev: false
+
+  /picocolors@1.0.0:
+    resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
+    dev: false
+
+  /postgres-array@2.0.0:
+    resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
+    engines: {node: '>=4'}
+    dev: false
+
+  /postgres-bytea@1.0.0:
+    resolution: {integrity: sha512-xy3pmLuQqRBZBXDULy7KbaitYqLcmxigw14Q5sj8QBVLqEwXfeybIKVWiqAXTlcvdvb0+xkOtDbfQMOf4lST1w==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /postgres-date@1.0.7:
+    resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
+    engines: {node: '>=0.10.0'}
+    dev: false
+
+  /postgres-interval@1.2.0:
+    resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      xtend: 4.0.2
+    dev: false
+
+  /prettier@2.8.8:
+    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
+    engines: {node: '>=10.13.0'}
+    hasBin: true
+    dev: true
+
+  /reflect-metadata@0.1.13:
+    resolution: {integrity: sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==}
+    dev: false
+
+  /remult@0.22.6:
+    resolution: {integrity: sha512-d+dVNCWab1SIqh3bA4K4pUUEKahjpiHyWUcm5Pgn+TPLgFzra3KwNUDNckVgsHL/vgz18EjBZbHRErEwoVQIzQ==}
+    dependencies:
+      '@paralleldrive/cuid2': 2.2.2
+      reflect-metadata: 0.1.13
+      tslib: 2.6.2
+      uuid: 8.3.2
+    dev: false
+
+  /sisteransi@1.0.5:
+    resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+    dev: false
+
+  /split2@4.2.0:
+    resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
+    engines: {node: '>= 10.x'}
+    dev: false
+
+  /tslib@2.6.2:
+    resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
+    dev: false
+
+  /uuid@8.3.2:
+    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    hasBin: true
+    dev: false
+
+  /xtend@4.0.2:
+    resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
+    engines: {node: '>=0.4'}
+    dev: false

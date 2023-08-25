@@ -1,24 +1,24 @@
-import {createPostgresDataProvider} from 'remult/postgres';
-import {writeFile, mkdir} from 'fs/promises';
+import { createPostgresDataProvider } from "remult/postgres";
+import { writeFile, mkdir } from "fs/promises";
 
-export function generateModels(
+export async function generateModels(
 	connectionString: string,
 	tables: string[],
-	dir = '.',
+	dir = "."
 ) {
-	mkdir(dir, {recursive: true});
-	Promise.all(
-		tables.map(async table => {
+	mkdir(dir, { recursive: true });
+	return Promise.all(
+		tables.map(async (table) => {
 			const entity = await getEntityTypescriptPostgres(table, connectionString);
-			writeFile(`${dir}/${table}.ts`, entity, {flag: 'w'});
-		}),
+			writeFile(`${dir}/${table}.ts`, entity, { flag: "w" });
+		})
 	);
 }
 
 async function getEntityTypescriptPostgres(
 	table: string,
 	connectionString: string,
-	schema = 'public',
+	schema = "public"
 ) {
 	const command = (
 		await createPostgresDataProvider({
@@ -26,9 +26,9 @@ async function getEntityTypescriptPostgres(
 		})
 	).createCommand();
 
-	let cols = '';
+	let cols = "";
 	let props = [];
-	props.push('allowApiCrud: true');
+	props.push("allowApiCrud: true");
 
 	let first = true;
 	for (const {
@@ -40,15 +40,15 @@ async function getEntityTypescriptPostgres(
 	} of (
 		await command.execute(
 			`select * from INFORMATION_SCHEMA.COLUMNS where table_schema=${command.addParameterAndReturnSqlToken(
-				schema,
+				schema
 			)} and table_name=${command.addParameterAndReturnSqlToken(table)}
 
-      order by ordinal_position`,
+      order by ordinal_position`
 		)
 	).rows) {
-		let decoratorArgs = '';
+		let decoratorArgs = "";
 
-		let {decorator, defaultVal, type} = handleDataType({
+		let { decorator, defaultVal, type } = handleDataType({
 			column_default,
 			data_type,
 			datetime_precision,
@@ -57,31 +57,31 @@ async function getEntityTypescriptPostgres(
 
 		if (
 			column_name.toLocaleLowerCase() != column_name ||
-			column_name == 'order'
+			column_name == "order"
 		)
 			decoratorArgs = `{ dbName: '"${column_name}"' }`;
 
 		cols +=
-			`${!first ? '\n' : ''}\n  ` +
+			`${!first ? "\n" : ""}\n  ` +
 			decorator +
 			`(${decoratorArgs})\n  ` +
 			column_name;
 		if (!defaultVal) {
-			cols += '!';
-			cols += ': ';
+			cols += "!";
+			cols += ": ";
 			cols += type;
 		}
-		if (defaultVal) cols += ' = ' + defaultVal;
+		if (defaultVal) cols += " = " + defaultVal;
 
 		if (first) first = false;
 	}
 
 	let r =
 		`import { Entity, Fields } from "remult";\n
-@Entity("${table}", { \n  ${props.join(',\n  ')} \n})
+@Entity("${table}", { \n  ${props.join(",\n  ")} \n})
 export class ${toPascalCase(table)} {` +
 		cols +
-		'\n}'.replace('  ', '');
+		"\n}".replace("  ", "");
 	return r;
 }
 
@@ -103,51 +103,51 @@ function handleDataType({
 	character_maximum_length: number;
 }) {
 	const res: Field = {
-		decorator: '@Fields.string',
+		decorator: "@Fields.string",
 		defaultVal: "''",
-		type: '',
+		type: "",
 	};
 	switch (data_type) {
-		case 'decimal':
-		case 'real':
-		case 'int':
-		case 'smallint':
-		case 'tinyint':
-		case 'bigint':
-		case 'float':
-		case 'numeric':
-		case 'NUMBER':
-		case 'money':
-			if (datetime_precision === 0) res.decorator = '@Fields.integer';
-			else res.decorator = '@Fields.number';
-			res.defaultVal = '0';
+		case "decimal":
+		case "real":
+		case "int":
+		case "smallint":
+		case "tinyint":
+		case "bigint":
+		case "float":
+		case "numeric":
+		case "NUMBER":
+		case "money":
+			if (datetime_precision === 0) res.decorator = "@Fields.integer";
+			else res.decorator = "@Fields.number";
+			res.defaultVal = "0";
 			break;
-		case 'nchar':
-		case 'nvarchar':
-		case 'ntext':
-		case 'NVARCHAR2':
-		case 'text':
-		case 'varchar':
-		case 'VARCHAR2':
+		case "nchar":
+		case "nvarchar":
+		case "ntext":
+		case "NVARCHAR2":
+		case "text":
+		case "varchar":
+		case "VARCHAR2":
 			break;
-		case 'char':
-		case 'CHAR':
+		case "char":
+		case "CHAR":
 			if (character_maximum_length == 8 && column_default == "('00000000')") {
-				res.decorator = '@Fields.dateOnly';
-				res.type = 'Date';
-				res.defaultVal = 'new Date()';
+				res.decorator = "@Fields.dateOnly";
+				res.type = "Date";
+				res.defaultVal = "new Date()";
 			}
 			break;
-		case 'DATE':
-		case 'datetime':
-		case 'datetime2':
-		case 'timestamp without time zone':
-			res.decorator = '@Fields.date';
-			res.type = 'Date';
-			res.defaultVal = 'new Date()';
+		case "DATE":
+		case "datetime":
+		case "datetime2":
+		case "timestamp without time zone":
+			res.decorator = "@Fields.date";
+			res.type = "Date";
+			res.defaultVal = "new Date()";
 			break;
-		case 'bit':
-			res.decorator = '@Fields.boolean';
+		case "bit":
+			res.decorator = "@Fields.boolean";
 			break;
 		default:
 			break;
@@ -159,11 +159,11 @@ function handleDataType({
 function toPascalCase(string: string) {
 	return `${string}`
 		.toLowerCase()
-		.replace(new RegExp(/[-_]+/, 'g'), ' ')
-		.replace(new RegExp(/[^\w\s]/, 'g'), '')
+		.replace(new RegExp(/[-_]+/, "g"), " ")
+		.replace(new RegExp(/[^\w\s]/, "g"), "")
 		.replace(
-			new RegExp(/\s+(.)(\w*)/, 'g'),
-			(_$1, $2, $3) => `${$2.toUpperCase() + $3}`,
+			new RegExp(/\s+(.)(\w*)/, "g"),
+			(_$1, $2, $3) => `${$2.toUpperCase() + $3}`
 		)
-		.replace(new RegExp(/\w/), s => s.toUpperCase());
+		.replace(new RegExp(/\w/), (s) => s.toUpperCase());
 }
