@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { generateModels } from "./getEntityTypescriptPostgres.js";
+import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js";
 import {
 	intro,
 	outro,
@@ -38,7 +38,7 @@ async function main() {
 	const s = spinner();
 	s.start("generating...");
 
-	generateModels(connectionString, ["actor"]);
+	getEntitiesTypescriptPostgres(connectionString, ["actor"]);
 
 	s.stop("generating...");
 

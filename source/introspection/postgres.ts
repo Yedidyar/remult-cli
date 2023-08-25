@@ -1,6 +1,5 @@
 import { SqlCommand, SqlDatabase } from "remult";
 import { EntitySchema, Field } from "./entity-schema.js";
-import { createPostgresDataProvider } from "remult/postgres";
 
 interface Column {
 	table_name: string;
