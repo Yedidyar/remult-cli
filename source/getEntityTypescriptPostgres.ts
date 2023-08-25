@@ -8,7 +8,8 @@ import {
 	writeFileSync,
 } from "fs";
 import { green, yellow } from "kleur/colors";
-import { SqlDatabase, remult } from "remult";
+import { createPostgresDataProvider } from "remult/postgres";
+import { toCamelCase, toPascalCase, toTitleCase } from "./utils/case.js";
 
 const deleteFolderRecursive = (path: string) => {
 	if (existsSync(path)) {
@@ -26,27 +27,6 @@ const deleteFolderRecursive = (path: string) => {
 		rmdirSync(path);
 	} else {
 	}
-};
-
-const toPascalCase = (str: string) => {
-	return str
-		.replace(/[-_](\w)/g, (_, c) => c.toUpperCase())
-		.replace(/^\w/, (c) => c.toUpperCase());
-};
-
-function toCamelCase(str: string) {
-	let words = toPascalCase(str).split("");
-	if (words[0]) {
-		words[0] = words[0].toLowerCase();
-	}
-	return words.join("");
-}
-
-const toTitleCase = (str: string) => {
-	return str
-		.toLowerCase()
-		.replace(/_/g, " ")
-		.replace(/\w+/g, (match) => match.charAt(0).toUpperCase() + match.slice(1));
 };
 
 function build_column(
@@ -105,7 +85,7 @@ function build_column(
 class DbTable {
 	schema: string;
 	db_name: string;
-	graphql_key: string;
+	entity_name: string;
 	class_name: string;
 	foreign_key: string;
 
@@ -116,12 +96,12 @@ class DbTable {
 
 		this.foreign_key = toCamelCase(db_name + "Id");
 
-		this.graphql_key = toCamelCase(this.class_name) + "s";
+		this.entity_name = toCamelCase(this.class_name) + "s";
 		if (([] as string[]).includes(this.class_name)) {
 			// let's do here a real custom mapping
 			// TODO: provide a custom mapping?
-		} else if (this.graphql_key.endsWith("ys")) {
-			this.graphql_key = this.graphql_key.slice(0, -2) + "ies";
+		} else if (this.entity_name.endsWith("ys")) {
+			this.entity_name = this.entity_name.slice(0, -2) + "ies";
 		}
 	}
 }
@@ -133,7 +113,7 @@ let report: {
 
 // TODO: everything optionnal
 export async function getEntitiesTypescriptPostgres(
-	// connectionString: string,
+	connectionString: string,
 	schema = "public",
 	exclude = [
 		"pg_stat_statements",
@@ -141,17 +121,21 @@ export async function getEntitiesTypescriptPostgres(
 		"_prisma_migrations",
 	],
 	include: string[] = [],
-	withReport: "no" | "numbers" | "full" = "numbers"
+	withReport: "no" | "numbers" | "full" = "full"
 ) {
 	report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
-	const command = SqlDatabase.getDb(remult).createCommand();
+	const command = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
 
 	const result = await command.execute(
 		`SELECT table_name, table_schema FROM information_schema.tables;`
 	);
 
 	deleteFolderRecursive("./src/shared");
-	mkdirSync("./src/shared/");
+	mkdirSync("./src/shared/", { recursive: true });
 	const entities_path = "./src/shared/entities/";
 	mkdirSync(entities_path);
 	const enums_path = "./src/shared/enums/";
@@ -176,6 +160,7 @@ export async function getEntitiesTypescriptPostgres(
 						(include.length === 0 || include.includes(table.db_name))
 					) {
 						const data = await getEntityTypescriptPostgres(
+							connectionString,
 							enums_path,
 							allTables,
 							table,
@@ -208,45 +193,56 @@ export const entities = [
 ]`
 	);
 
-	if (withReport !== "no") {
-		console.log(green(` === Remult cli ===`));
-		if (withReport === "full") {
-			// No table matching found
+	if (withReport === "no") {
+		return;
+	}
 
-			console.log(
-				` - ${green(`ForeignKey, no table matching found`)}:
+	console.log(green(` === Remult cli ===`));
+	if (withReport === "full") {
+		// No table matching found
+
+		console.log(
+			` - ${green(`ForeignKey, no table matching found`)}:
      ${yellow(
 				report.noTableMatchingforeignKey.map((c) => `${c}`).join("\n     ")
 			)}`
-			);
-			console.log(
-				` - ${green(`Type need to be manually typed`)}:
+		);
+		console.log(
+			` - ${green(`Type need to be manually typed`)}:
      ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n     "))}`
-			);
-		} else if (withReport === "numbers") {
-			console.log(
-				` - ${green(`ForeignKey, no table matching found`)}: ${yellow(
-					report.noTableMatchingforeignKey.length
-				)}`
-			);
-			console.log(
-				` - ${green(`Type need to be manually typed`)}: ${yellow(
-					report.typeCouldBeBetter.length
-				)}`
-			);
-		}
-		console.log(green(` ==================`));
+		);
+	} else if (withReport === "numbers") {
+		console.log(
+			` - ${green(`ForeignKey, no table matching found`)}: ${yellow(
+				report.noTableMatchingforeignKey.length
+			)}`
+		);
+		console.log(
+			` - ${green(`Type need to be manually typed`)}: ${yellow(
+				report.typeCouldBeBetter.length
+			)}`
+		);
 	}
+	console.log(green(` ==================`));
 }
 
-export async function getEntityTypescriptPostgres(
+async function getEntityTypescriptPostgres(
+	connectionString: string,
 	enums_path: string,
 	tables: DbTable[],
 	table: DbTable,
 	schema: string
 ) {
-	const command = SqlDatabase.getDb(remult).createCommand();
-	const commandEnum = SqlDatabase.getDb(remult).createCommand();
+	const command = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
+	const commandEnum = (
+		await createPostgresDataProvider({
+			connectionString,
+		})
+	).createCommand();
 
 	let enums: Record<string, string[]> = {};
 	let foreign_key_founds: Record<string, string[]> = {};
@@ -496,7 +492,7 @@ export async function getEntityTypescriptPostgres(
 			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
-@Entity<${table.class_name}>('${table.graphql_key}', {\n\t${props.join(
+@Entity<${table.class_name}>('${table.entity_name}', {\n\t${props.join(
 			",\n\t"
 		)}\n})
 export class ${table.class_name} {

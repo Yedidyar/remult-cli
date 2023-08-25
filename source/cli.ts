@@ -1,50 +1,23 @@
 #!/usr/bin/env node
 
 import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js";
-import {
-	intro,
-	outro,
-	confirm,
-	spinner,
-	isCancel,
-	cancel,
-	text,
-} from "@clack/prompts";
-import { setTimeout as sleep } from "node:timers/promises";
+import yargs from "yargs/yargs";
 
 async function main() {
-	console.log();
-	intro(" remult cli ");
+	const { connectionString } = await yargs(process.argv.slice(2))
+		.options({
+			connectionString: {
+				type: "string",
+				demandOption: true,
+				description:
+					"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
+			},
+		})
+		.example([
+			["remult --connectionString postgres://user:pass@host:port/db-name"],
+		]).argv;
 
-	const connectionString = await text({
-		message: "connectionString",
-		placeholder: "postgres://user:pass@host:port/db-name",
-	});
-
-	if (isCancel(connectionString)) {
-		cancel("Operation cancelled");
-		return process.exit(0);
-	}
-
-	const shouldContinue = await confirm({
-		message: "Do you want to continue?",
-	});
-
-	if (isCancel(shouldContinue)) {
-		cancel("Operation cancelled");
-		return process.exit(0);
-	}
-
-	const s = spinner();
-	s.start("generating...");
-
-	getEntitiesTypescriptPostgres(connectionString, ["actor"]);
-
-	s.stop("generating...");
-
-	outro("You're all set!");
-
-	await sleep(1000);
+	await getEntitiesTypescriptPostgres(connectionString);
 }
 
 main().catch(console.error);
