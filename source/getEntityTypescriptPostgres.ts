@@ -1,33 +1,14 @@
-import {
-	existsSync,
-	lstatSync,
-	mkdirSync,
-	readdirSync,
-	rmdirSync,
-	unlinkSync,
-	writeFileSync,
-} from "fs";
-import { green, yellow } from "kleur/colors";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { toCamelCase, toPascalCase, toTitleCase } from "./utils/case.js";
-
-const deleteFolderRecursive = (path: string) => {
-	if (existsSync(path)) {
-		readdirSync(path).forEach((file) => {
-			const curPath = `${path}/${file}`;
-			if (lstatSync(curPath).isDirectory()) {
-				// Recursive call for subdirectories
-				deleteFolderRecursive(curPath);
-			} else {
-				// Delete file
-				unlinkSync(curPath);
-			}
-		});
-		// Delete empty directory
-		rmdirSync(path);
-	} else {
-	}
-};
+import { toPascalCase, toTitleCase } from "./utils/case.js";
+import {
+	getEnumDef,
+	getForeignKeys,
+	getTableColumnInfo,
+	getTablesInfo,
+} from "./postgres/commands.js";
+import { DbTable } from "./DbTable.js";
+import { CliReport, logReport } from "./report.js";
 
 function build_column(
 	decorator: string,
@@ -82,35 +63,6 @@ function build_column(
 	return current_col;
 }
 
-class DbTable {
-	schema: string;
-	db_name: string;
-	entity_name: string;
-	class_name: string;
-	foreign_key: string;
-
-	constructor(db_name: string, schema: string) {
-		this.schema = schema;
-		this.db_name = db_name;
-		this.class_name = toPascalCase(db_name);
-
-		this.foreign_key = toCamelCase(db_name + "Id");
-
-		this.entity_name = toCamelCase(this.class_name) + "s";
-		if (([] as string[]).includes(this.class_name)) {
-			// let's do here a real custom mapping
-			// TODO: provide a custom mapping?
-		} else if (this.entity_name.endsWith("ys")) {
-			this.entity_name = this.entity_name.slice(0, -2) + "ies";
-		}
-	}
-}
-
-let report: {
-	noTableMatchingforeignKey: string[];
-	typeCouldBeBetter: string[];
-};
-
 // TODO: everything optionnal
 export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
@@ -121,33 +73,34 @@ export async function getEntitiesTypescriptPostgres(
 		"_prisma_migrations",
 	],
 	include: string[] = [],
-	withReport: "no" | "numbers" | "full" = "full"
+	reportKind: "no" | "numbers" | "full" = "full"
 ) {
-	report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
-	const command = (
-		await createPostgresDataProvider({
-			connectionString,
-		})
-	).createCommand();
+	const report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
 
-	const result = await command.execute(
-		`SELECT table_name, table_schema FROM information_schema.tables;`
-	);
+	const provider = await createPostgresDataProvider({
+		connectionString,
+	});
 
-	deleteFolderRecursive("./src/shared");
+	const tableInfo = await getTablesInfo(provider);
+	const foreignKeys = await getForeignKeys(provider);
+
+	rmSync("./src/shared", { recursive: true, force: true });
+
 	mkdirSync("./src/shared/", { recursive: true });
 	const entities_path = "./src/shared/entities/";
 	mkdirSync(entities_path);
 	const enums_path = "./src/shared/enums/";
 	mkdirSync(enums_path);
 
-	const allTables: DbTable[] = [];
-	// build the list of classes first (for foreign keys link later)
-	result.rows.forEach(async (c) => {
-		const table = new DbTable(c.table_name, c.table_schema);
-		allTables.push(table);
+	const allTables = tableInfo.map((table) => {
+		const tableForeignKeys = foreignKeys.filter(
+			({ table_name }) => table.table_name === table_name
+		);
+
+		return new DbTable(table.table_name, table.table_schema, tableForeignKeys);
 	});
 
+	// build the list of classes first (for foreign keys link later)
 	const tablesGenerated: DbTable[] = [];
 	await Promise.all(
 		allTables
@@ -156,17 +109,17 @@ export async function getEntitiesTypescriptPostgres(
 			.map(async (table) => {
 				try {
 					if (
-						!exclude.includes(table.db_name) &&
-						(include.length === 0 || include.includes(table.db_name))
+						!exclude.includes(table.dbName) &&
+						(include.length === 0 || include.includes(table.dbName))
 					) {
 						const data = await getEntityTypescriptPostgres(
 							connectionString,
 							enums_path,
-							allTables,
 							table,
-							schema
+							schema,
+							report
 						);
-						writeFileSync(`${entities_path}${table.class_name}.ts`, data);
+						writeFileSync(`${entities_path}${table.className}.ts`, data);
 						tablesGenerated.push(table);
 					}
 				} catch (error) {
@@ -179,84 +132,46 @@ export async function getEntitiesTypescriptPostgres(
 	writeFileSync(
 		`${entities_path}_entities.ts`,
 		`${tablesGenerated
-			.sort((a, b) => a.class_name.localeCompare(b.class_name))
+			.sort((a, b) => a.className.localeCompare(b.className))
 			.map((e) => {
-				return `import { ${e.class_name} } from './${e.class_name}';`;
+				return `import { ${e.className} } from './${e.className}';`;
 			})
 			.join("\n")}
 
 export const entities = [
   ${tablesGenerated
-		.sort((a, b) => a.class_name.localeCompare(b.class_name))
-		.map((c) => c.class_name)
+		.sort((a, b) => a.className.localeCompare(b.className))
+		.map((c) => c.className)
 		.join(",\n  ")}
 ]`
 	);
 
-	if (withReport === "no") {
-		return;
-	}
-
-	console.log(green(` === Remult cli ===`));
-	if (withReport === "full") {
-		// No table matching found
-
-		console.log(
-			` - ${green(`ForeignKey, no table matching found`)}:
-     ${yellow(
-				report.noTableMatchingforeignKey.map((c) => `${c}`).join("\n     ")
-			)}`
-		);
-		console.log(
-			` - ${green(`Type need to be manually typed`)}:
-     ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n     "))}`
-		);
-	} else if (withReport === "numbers") {
-		console.log(
-			` - ${green(`ForeignKey, no table matching found`)}: ${yellow(
-				report.noTableMatchingforeignKey.length
-			)}`
-		);
-		console.log(
-			` - ${green(`Type need to be manually typed`)}: ${yellow(
-				report.typeCouldBeBetter.length
-			)}`
-		);
-	}
-	console.log(green(` ==================`));
+	logReport(reportKind, report);
 }
 
 async function getEntityTypescriptPostgres(
 	connectionString: string,
 	enums_path: string,
-	tables: DbTable[],
 	table: DbTable,
-	schema: string
+	schema: string,
+	report: CliReport
 ) {
-	const command = (
-		await createPostgresDataProvider({
-			connectionString,
-		})
-	).createCommand();
-	const commandEnum = (
-		await createPostgresDataProvider({
-			connectionString,
-		})
-	).createCommand();
+	const provider = await createPostgresDataProvider({
+		connectionString,
+	});
 
 	let enums: Record<string, string[]> = {};
-	let foreign_key_founds: Record<string, string[]> = {};
 
 	let cols = [];
 	let props = [];
 	props.push("allowApiCrud: true");
-	if (table.db_name !== table.class_name) {
-		if (table.schema === "public" && table.db_name === "user") {
+	if (table.dbName !== table.className) {
+		if (table.schema === "public" && table.dbName === "user") {
 			// TODO fix dbName should be able to take a schema
-			props.push(`// dbName: '${table.db_name}'`);
-			props.push(`sqlExpression: 'public.${table.db_name}'`);
+			props.push(`// dbName: '${table.dbName}'`);
+			props.push(`sqlExpression: 'public.${table.dbName}'`);
 		} else {
-			props.push(`dbName: '${table.db_name}'`);
+			props.push(`dbName: '${table.dbName}'`);
 		}
 	}
 
@@ -269,16 +184,7 @@ async function getEntityTypescriptPostgres(
 		character_maximum_length,
 		udt_name,
 		is_nullable,
-	} of (
-		await command.execute(
-			`SELECT * from INFORMATION_SCHEMA.COLUMNS
-			WHERE
-				table_name=${command.addParameterAndReturnSqlToken(table.db_name)}
-				AND
-				table_schema=${command.addParameterAndReturnSqlToken(schema)}
-      ORDER BY ordinal_position`
-		)
-	).rows) {
+	} of await getTableColumnInfo(provider, schema, table.dbName)) {
 		let decorator = "@Fields.string";
 
 		let decoratorArgsValueType: string = "";
@@ -360,6 +266,7 @@ async function getEntityTypescriptPostgres(
 			case "bit":
 			case "boolean":
 				decorator = "@Fields.boolean";
+				type = "boolean";
 				break;
 			case "ARRAY":
 				decorator = "@Fields.json";
@@ -368,7 +275,7 @@ async function getEntityTypescriptPostgres(
 
 				// TODO: We can probably do better
 				report.typeCouldBeBetter.push(
-					`For table ["${table.db_name}"] column ["${column_name}"] => The type is not specified.`
+					`For table ["${table.dbName}"] column ["${column_name}"] => The type is not specified.`
 				);
 				break;
 			case "USER-DEFINED":
@@ -382,14 +289,9 @@ async function getEntityTypescriptPostgres(
 						toPascalCase(udt_name) + "." + column_default.split("'")[1];
 				}
 
-				const enumDef = await commandEnum.execute(
-					`SELECT t.typname, e.enumlabel
-						FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
-						WHERE t.typname = '${udt_name}'
-						ORDER BY t.typname, e.enumlabel;`
-				);
+				const enumDef = await getEnumDef(provider, udt_name);
 
-				enums[toPascalCase(udt_name)] = enumDef.rows.map((e) => e.enumlabel);
+				enums[toPascalCase(udt_name)] = enumDef.map((e) => e.enumlabel);
 				break;
 			default:
 				console.log("unmanaged", {
@@ -424,38 +326,21 @@ async function getEntityTypescriptPostgres(
 		);
 
 		// do we have a foreign key ?
-		const foreign_key =
-			column_name.endsWith("Id") &&
-			tables.find((t) => t.foreign_key === column_name);
+		const foreign_key = table.foreignKeys.find(
+			(f) => f.columnName === column_name
+		);
 		let current_col_fk: string | undefined;
 		if (foreign_key) {
-			// foreign_key_founds[foreign_key.class_name] =
-			// 	foreign_key_founds[foreign_key.class_name];
-
 			current_col_fk = build_column(
 				"@Field",
-				`() => ${foreign_key.class_name}`,
+				`() => ${foreign_key.foreignClassName}`,
 				["lazy: true"],
 				column_name.replace(/Id$/, ""),
 				column_name,
 				"YES",
-				foreign_key.class_name,
+				foreign_key.foreignClassName,
 				null
 			);
-		}
-
-		if (column_name.endsWith("Id") && !foreign_key) {
-			report.noTableMatchingforeignKey.push(
-				`Table ["${table.db_name}"] Column ["${column_name}"]`
-			);
-			// TODO: We can do probably better with this query to get the list of constraints
-			// 			SELECT conrelid::regclass AS table_name,
-			//        conname AS foreign_key,
-			//        pg_get_constraintdef(oid)
-			// FROM   pg_constraint
-			// WHERE  contype = 'f'
-			// AND    connamespace = 'public'::regnamespace
-			// ORDER  BY conrelid::regclass::text, contype DESC;
 		}
 
 		if (current_col_fk) {
@@ -463,11 +348,6 @@ async function getEntityTypescriptPostgres(
 		} else {
 			cols.push(current_col + `\n`);
 		}
-		// TODO REMULT: Would be nice to have profileId & profile props. Today not working because the 2 have the same dbName and remult doesn't like it
-		// cols.push(current_col + `${current_col_fk ? '' : '\n'}`)
-		// if (current_col_fk) {
-		// 	cols.push(current_col_fk + `\n`)
-		// }
 	}
 
 	if (defaultOrderBy) {
@@ -481,10 +361,16 @@ async function getEntityTypescriptPostgres(
 		return ``;
 	}
 
+	const foreignClassNames = table.foreignKeys.map(
+		({ foreignClassName }) => foreignClassName
+	);
+
 	let r =
-		`import { Entity, Field, Fields, EntityBase } from 'remult'` +
+		`import { Entity, ${
+			foreignClassNames.length > 0 ? "Field," : ""
+		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
-			Object.keys(foreign_key_founds),
+			foreignClassNames,
 			(c) => `import { ${c} } from './${c}'`
 		)}` +
 		`${addLineIfNeeded(
@@ -492,10 +378,8 @@ async function getEntityTypescriptPostgres(
 			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
-@Entity<${table.class_name}>('${table.entity_name}', {\n\t${props.join(
-			",\n\t"
-		)}\n})
-export class ${table.class_name} {
+@Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
+export class ${table.className} {
 ${cols.join(`\n`)}}
 `;
 
