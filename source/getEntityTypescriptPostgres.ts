@@ -1,6 +1,10 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { toPascalCase, toTitleCase } from "./utils/case.js";
+import {
+	toPascalCase,
+	toTitleCase,
+	kababToConstantCase,
+} from "./utils/case.js";
 import {
 	getEnumDef,
 	getForeignKeys,
@@ -67,6 +71,8 @@ function build_column(
 export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
 	outputDir: string,
+	// TODO: remove it when @jycouet finish with that
+	tmp_jyc = false,
 	schema = "public",
 	exclude = [
 		"pg_stat_statements",
@@ -98,7 +104,12 @@ export async function getEntitiesTypescriptPostgres(
 			({ table_name }) => table.table_name === table_name
 		);
 
-		return new DbTable(table.table_name, table.table_schema, tableForeignKeys);
+		return new DbTable(
+			table.table_name,
+			table.table_schema,
+			tableForeignKeys,
+			tmp_jyc
+		);
 	});
 
 	// build the list of classes first (for foreign keys link later)
@@ -282,10 +293,11 @@ async function getEntityTypescriptPostgres(
 			case "USER-DEFINED":
 				decorator = `@Field`;
 				decoratorArgsValueType += `() => ${toPascalCase(udt_name)}`;
-				type = null;
-				if (column_default === null) {
-					defaultVal = "null";
-				} else {
+
+				type = toPascalCase(udt_name);
+
+				if (column_default !== null) {
+					type = null;
 					defaultVal =
 						toPascalCase(udt_name) + "." + column_default.split("'")[1];
 				}
@@ -362,24 +374,28 @@ async function getEntityTypescriptPostgres(
 		return ``;
 	}
 
-	const foreignClassNames = [
+	const isContainsForeignKeys = table.foreignKeys.length > 0;
+
+	const foreignClassNamesToImport = [
 		...new Set(
-			table.foreignKeys.map(({ foreignClassName }) => foreignClassName)
+			table.foreignKeys
+				.filter(({ isSelfReferenced }) => !isSelfReferenced)
+				.map(({ foreignClassName }) => foreignClassName)
 		),
 	];
 
+	const enumsKeys = Object.keys(enums);
+
 	let r =
 		`import { Entity, ${
-			foreignClassNames.length > 0 || Object.keys(enums).length > 0
-				? "Field, "
-				: ""
+			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
-			foreignClassNames,
+			foreignClassNamesToImport,
 			(c) => `import { ${c} } from './${c}'`
 		)}` +
 		`${addLineIfNeeded(
-			Object.keys(enums),
+			enumsKeys,
 			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
@@ -397,8 +413,13 @@ ${cols.join(`\n`)}}
 
 @ValueListFieldType()
 export class ${enumName} {
-	${enumValues
-		?.map((e) => `static ${e} = new ${enumName}('${e}', '${toTitleCase(e)}')`)
+  ${enumValues
+		?.map(
+			(e) =>
+				`static ${kababToConstantCase(
+					e
+				)} = new ${enumName}('${e}', '${toTitleCase(e)}')`
+		)
 		.join("\n  ")}
 
   constructor(public id: string, public caption: string) {}

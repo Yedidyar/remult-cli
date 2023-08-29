@@ -27,3 +27,10 @@ export const toTitleCase = (str: string) => {
 
 	return titleCaseWords.join(" ");
 };
+
+export const kababToConstantCase = (str: string) => {
+	return str
+		.replace(/([a-z\d])([A-Z])/g, "$1_$2")
+		.toUpperCase()
+		.replace(/-/g, "_");
+};
