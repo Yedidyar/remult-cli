@@ -13,8 +13,17 @@ export function toCamelCase(str: string) {
 }
 
 export const toTitleCase = (str: string) => {
-	return str
-		.toLowerCase()
-		.replace(/_/g, " ")
-		.replace(/\w+/g, (match) => match.charAt(0).toUpperCase() + match.slice(1));
+	// Replace dashes and underscores with spaces
+	const stringWithSpaces = str.replace(/[-_]/g, " ");
+
+	// Add a space before each capital letter (for camelCase)
+	const titleCaseString = stringWithSpaces.replace(/([a-z])([A-Z])/g, "$1 $2");
+
+	// Capitalize the first letter of each word and join them back
+	const words = titleCaseString.split(" ");
+	const titleCaseWords = words.map(
+		(word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+	);
+
+	return titleCaseWords.join(" ");
 };
