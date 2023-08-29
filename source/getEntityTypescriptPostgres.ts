@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { toPascalCase, toTitleCase } from "./utils/case.js";
+import { kababToSnakeCase, toPascalCase, toTitleCase } from "./utils/case.js";
 import {
 	getEnumDef,
 	getForeignKeys,
@@ -281,10 +281,11 @@ async function getEntityTypescriptPostgres(
 			case "USER-DEFINED":
 				decorator = `@Field`;
 				decoratorArgsValueType += `() => ${toPascalCase(udt_name)}`;
-				type = null;
 				if (column_default === null) {
+					type = `${toPascalCase(udt_name)} | null`;
 					defaultVal = "null";
 				} else {
+					type = null;
 					defaultVal =
 						toPascalCase(udt_name) + "." + column_default.split("'")[1];
 				}
@@ -365,16 +366,18 @@ async function getEntityTypescriptPostgres(
 		({ foreignClassName }) => foreignClassName
 	);
 
+	const enumsKeys = Object.keys(enums);
+
 	let r =
 		`import { Entity, ${
-			foreignClassNames.length > 0 ? "Field," : ""
+			foreignClassNames.length > 0 || enumsKeys.length > 0 ? "Field," : ""
 		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
 			foreignClassNames,
 			(c) => `import { ${c} } from './${c}'`
 		)}` +
 		`${addLineIfNeeded(
-			Object.keys(enums),
+			enumsKeys,
 			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
@@ -393,7 +396,12 @@ ${cols.join(`\n`)}}
 @ValueListFieldType()
 export class ${enumName} {
   ${enumValues
-		?.map((e) => `static ${e} = new ${enumName}('${e}', '${toTitleCase(e)}')`)
+		?.map(
+			(e) =>
+				`static ${kababToSnakeCase(e)} = new ${enumName}('${e}', '${toTitleCase(
+					e
+				)}')`
+		)
 		.join("\n  ")}
 
   constructor(public id: string, public caption: string) {}

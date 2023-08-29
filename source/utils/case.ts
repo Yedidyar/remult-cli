@@ -18,3 +18,5 @@ export const toTitleCase = (str: string) => {
 		.replace(/_/g, " ")
 		.replace(/\w+/g, (match) => match.charAt(0).toUpperCase() + match.slice(1));
 };
+
+export const kababToSnakeCase = (str: string) => str.replace(/-/g, () => "_");

@@ -7,7 +7,7 @@ export interface TableInfo {
 
 export interface TableColumnInfo {
 	column_name: string;
-	column_default: string;
+	column_default: string | null;
 	data_type: string;
 	datetime_precision: number;
 	character_maximum_length: number;
