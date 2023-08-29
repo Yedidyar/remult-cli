@@ -1,6 +1,10 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { kababToSnakeCase, toPascalCase, toTitleCase } from "./utils/case.js";
+import {
+	toPascalCase,
+	toTitleCase,
+	kababToConstantCase,
+} from "./utils/case.js";
 import {
 	getEnumDef,
 	getForeignKeys,
@@ -399,9 +403,9 @@ export class ${enumName} {
   ${enumValues
 		?.map(
 			(e) =>
-				`static ${kababToSnakeCase(e)} = new ${enumName}('${e}', '${toTitleCase(
+				`static ${kababToConstantCase(
 					e
-				)}')`
+				)} = new ${enumName}('${e}', '${toTitleCase(e)}')`
 		)
 		.join("\n  ")}
 
