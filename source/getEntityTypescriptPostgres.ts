@@ -367,9 +367,13 @@ async function getEntityTypescriptPostgres(
 		return ``;
 	}
 
-	const foreignClassNames = [
+	const isContainsForeignKeys = table.foreignKeys.length > 0;
+
+	const foreignClassNamesToImport = [
 		...new Set(
-			table.foreignKeys.map(({ foreignClassName }) => foreignClassName)
+			table.foreignKeys
+				.filter(({ isSelfReferenced }) => !isSelfReferenced)
+				.map(({ foreignClassName }) => foreignClassName)
 		),
 	];
 
@@ -377,10 +381,10 @@ async function getEntityTypescriptPostgres(
 
 	let r =
 		`import { Entity, ${
-			foreignClassNames.length > 0 || enumsKeys.length > 0 ? "Field," : ""
+			isContainsForeignKeys || enumsKeys.length > 0 ? "Field," : ""
 		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
-			foreignClassNames,
+			foreignClassNamesToImport,
 			(c) => `import { ${c} } from './${c}'`
 		)}` +
 		`${addLineIfNeeded(

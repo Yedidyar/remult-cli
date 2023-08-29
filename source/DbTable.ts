@@ -1,4 +1,4 @@
-import { ForeignKey } from "./postgres/commands.js";
+import type { ForeignKey } from "./postgres/commands.js";
 import { toCamelCase, toPascalCase } from "./utils/case.js";
 
 export class DbTable {
@@ -9,6 +9,7 @@ export class DbTable {
 	foreignKeys: {
 		columnName: string;
 		foreignClassName: string;
+		isSelfReferenced: boolean;
 	}[];
 
 	constructor(dbName: string, schema: string, foreignKeys: ForeignKey[]) {
@@ -19,6 +20,7 @@ export class DbTable {
 			({ foreign_table_name, column_name: columnName }) => ({
 				columnName,
 				foreignClassName: toPascalCase(foreign_table_name),
+				isSelfReferenced: foreign_table_name === dbName,
 			})
 		);
 		this.className = toPascalCase(dbName);
