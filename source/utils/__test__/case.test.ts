@@ -1,5 +1,10 @@
 import { expect, test, describe } from "vitest";
-import { toCamelCase, toPascalCase, toTitleCase } from "../case.js";
+import {
+	kababToConstantCase,
+	toCamelCase,
+	toPascalCase,
+	toTitleCase,
+} from "../case.js";
 
 describe("#unit-test toPascalCase", () => {
 	test("empty string", () => {
@@ -55,5 +60,27 @@ describe("#unit-test toTitleCase", () => {
 	});
 	test("from ALL_CAPS", () => {
 		expect(toTitleCase("ALL_DAY")).toBe("All Day");
+	});
+});
+
+describe("#unit-test kababToConstantCase", () => {
+	test("empty string", () => {
+		expect(kababToConstantCase("")).toBe("");
+	});
+	test("from PascalCase", () => {
+		expect(kababToConstantCase("PascalCase")).toBe("PASCAL_CASE");
+	});
+	test("from camelCase", () => {
+		expect(kababToConstantCase("camelCase")).toBe("CAMEL_CASE");
+	});
+	test("from kabab-case", () => {
+		expect(kababToConstantCase("kabab-case")).toBe("KABAB_CASE");
+	});
+	test("from snake_case", () => {
+		expect(kababToConstantCase("snake_case")).toBe("SNAKE_CASE");
+	});
+
+	test("from ALL_CAPS", () => {
+		expect(kababToConstantCase("ALL_DAY")).toBe("ALL_DAY");
 	});
 });
