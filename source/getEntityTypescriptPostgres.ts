@@ -282,10 +282,10 @@ async function getEntityTypescriptPostgres(
 			case "USER-DEFINED":
 				decorator = `@Field`;
 				decoratorArgsValueType += `() => ${toPascalCase(udt_name)}`;
-				if (column_default === null) {
-					type = `${toPascalCase(udt_name)} | null`;
-					defaultVal = "null";
-				} else {
+
+				type = toPascalCase(udt_name);
+
+				if (column_default !== null) {
 					type = null;
 					defaultVal =
 						toPascalCase(udt_name) + "." + column_default.split("'")[1];
