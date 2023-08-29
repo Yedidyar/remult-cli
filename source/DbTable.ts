@@ -12,18 +12,31 @@ export class DbTable {
 		isSelfReferenced: boolean;
 	}[];
 
-	constructor(dbName: string, schema: string, foreignKeys: ForeignKey[]) {
+	constructor(
+		dbName: string,
+		schema: string,
+		foreignKeys: ForeignKey[],
+		// TODO: remove it when @jycouet finish with that
+		tmp_jyc = false
+	) {
 		this.schema = schema;
 		this.dbName = dbName;
 
 		this.foreignKeys = foreignKeys.map(
-			({ foreign_table_name, column_name: columnName }) => ({
-				columnName,
-				foreignClassName: toPascalCase(foreign_table_name),
-				isSelfReferenced: foreign_table_name === dbName,
-			})
+			({ foreign_table_name, column_name: columnName }) => {
+				return {
+					columnName,
+					foreignClassName: tmp_jyc
+						? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
+						: toPascalCase(foreign_table_name),
+					isSelfReferenced: foreign_table_name === dbName,
+				};
+			}
 		);
-		this.className = toPascalCase(dbName);
+
+		this.className = tmp_jyc
+			? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
+			: toPascalCase(dbName);
 
 		this.key = toCamelCase(this.className) + "s";
 
