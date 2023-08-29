@@ -66,6 +66,7 @@ function build_column(
 // TODO: everything optionnal
 export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
+	outputDir: string,
 	schema = "public",
 	exclude = [
 		"pg_stat_statements",
@@ -84,12 +85,12 @@ export async function getEntitiesTypescriptPostgres(
 	const tableInfo = await getTablesInfo(provider);
 	const foreignKeys = await getForeignKeys(provider);
 
-	rmSync("./src/shared", { recursive: true, force: true });
+	rmSync(outputDir, { recursive: true, force: true });
 
-	mkdirSync("./src/shared/", { recursive: true });
-	const entities_path = "./src/shared/entities/";
+	mkdirSync(outputDir, { recursive: true });
+	const entities_path = `${outputDir}/entities/`;
 	mkdirSync(entities_path);
-	const enums_path = "./src/shared/enums/";
+	const enums_path = `${outputDir}/enums/`;
 	mkdirSync(enums_path);
 
 	const allTables = tableInfo.map((table) => {
