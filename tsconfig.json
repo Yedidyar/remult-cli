@@ -29,5 +29,6 @@
 		"skipLibCheck": true,
 		"esModuleInterop": true
 	},
-	"include": ["source"]
+	"include": ["src"],
+	"exclude": ["src/shared"]
 }
