@@ -388,7 +388,7 @@ async function getEntityTypescriptPostgres(
 
 	let r =
 		`import { Entity, ${
-			isContainsForeignKeys || enumsKeys.length > 0 ? "Field," : ""
+			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,

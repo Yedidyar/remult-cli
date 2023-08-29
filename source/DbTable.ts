@@ -27,7 +27,7 @@ export class DbTable {
 				return {
 					columnName,
 					foreignClassName: tmp_jyc
-						? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
+						? toPascalCase(foreign_table_name).replace(/^(.{3})/, "$1rrr")
 						: toPascalCase(foreign_table_name),
 					isSelfReferenced: foreign_table_name === dbName,
 				};
