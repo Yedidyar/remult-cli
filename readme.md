@@ -2,18 +2,10 @@
 
 remult-cli is a command-line tool for generating Remult entities from a PostgreSQL database. It is easy to use, versatile, and customizable.
 
-## Installation
-
-still has not been published yet
-
-```
-npm install --global @remult/cli
-```
-
 ## Usage
 
 ```
-remult --help
+npx remult-cli --help
 
 	Options:
 	--help              Show help                                        [boolean]
@@ -22,7 +14,7 @@ remult --help
 						PostgreSQL databases are supported.    [string] [required]
 
 	Examples:
-	remult --connectionString postgres://user:pass@host:port/db-name
+	npx remult-cli --connectionString postgres://user:pass@host:port/db-name
 ```
 
 ## Development
@@ -33,6 +25,8 @@ git clone https://github.com/Yedidyar/remult-cli.git
 pnpm i -g
 
 pnpm run dev
+
+remult <your-command>
 ```
 
 ## Features
