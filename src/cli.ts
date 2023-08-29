@@ -2,6 +2,9 @@
 
 import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js";
 import yargs from "yargs/yargs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 async function main() {
 	const { connectionString, output, tmp_jyc } = await yargs(
@@ -11,15 +14,17 @@ async function main() {
 			connectionString: {
 				type: "string",
 				demandOption: true,
+				default: process.env["DATABASE_URL"],
 				description:
 					"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
 			},
 			output: {
-				default: "./src/shared",
+				default: process.env["OUTPUT"] ?? "./src/shared",
 			},
 			tmp_jyc: {
 				type: "boolean",
 				hidden: true,
+				default: process.env["TMP_JYC"] === "true" ? true : false,
 			},
 		})
 		.example([
