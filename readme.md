@@ -1,6 +1,6 @@
 # remult-cli
 
-remult-cli is a command-line tool for generating Remult entities from a PostgreSQL database. It is easy to use, versatile, and customizable.
+remult-cli is a command-line tool for generating Remult entities from a PostgreSQL database (inspired by `prisma db pull`).
 
 ## Usage
 
@@ -12,6 +12,7 @@ npx remult-cli --help
 	--version           Show version number                              [boolean]
 	--connectionString  Your PostgreSQL database connection string. Only
 						PostgreSQL databases are supported.    [string] [required]
+	--output                                             [default: "./src/shared"]
 
 	Examples:
 	npx remult-cli --connectionString postgres://user:pass@host:port/db-name
@@ -29,9 +30,6 @@ pnpm run dev
 remult <your-command>
 ```
 
-## Features
-
-Easy and simple to use.
 
 ## Suggestions for improvement
 
