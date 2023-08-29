@@ -135,12 +135,12 @@ export async function getEntitiesTypescriptPostgres(
 		`${tablesGenerated
 			.sort((a, b) => a.className.localeCompare(b.className))
 			.map((e) => {
-				return `import { ${e.className} } from './${e.className}';`;
+				return `import { ${e.className} } from './${e.className}'`;
 			})
 			.join("\n")}
 
 export const entities = [
-  ${tablesGenerated
+	${tablesGenerated
 		.sort((a, b) => a.className.localeCompare(b.className))
 		.map((c) => c.className)
 		.join(",\n  ")}
@@ -362,13 +362,17 @@ async function getEntityTypescriptPostgres(
 		return ``;
 	}
 
-	const foreignClassNames = table.foreignKeys.map(
-		({ foreignClassName }) => foreignClassName
-	);
+	const foreignClassNames = [
+		...new Set(
+			table.foreignKeys.map(({ foreignClassName }) => foreignClassName)
+		),
+	];
 
 	let r =
 		`import { Entity, ${
-			foreignClassNames.length > 0 ? "Field," : ""
+			foreignClassNames.length > 0 || Object.keys(enums).length > 0
+				? "Field, "
+				: ""
 		}Fields } from 'remult'` +
 		`${addLineIfNeeded(
 			foreignClassNames,
@@ -393,7 +397,7 @@ ${cols.join(`\n`)}}
 
 @ValueListFieldType()
 export class ${enumName} {
-  ${enumValues
+	${enumValues
 		?.map((e) => `static ${e} = new ${enumName}('${e}', '${toTitleCase(e)}')`)
 		.join("\n  ")}
 
