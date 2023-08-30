@@ -107,7 +107,7 @@ export const processColumnType = async (
 	return {
 		decorator: field?.decorator ?? "@Fields.string",
 		decoratorArgsValueType: field?.decoratorArgsValueType ?? "",
-		type: field?.type ?? "string",
+		type: field?.type === undefined ? "string" : field?.type,
 		defaultVal: field?.defaultVal ?? null,
 	};
 };
