@@ -38,7 +38,7 @@ async function main() {
 			tmp_jyc: {
 				type: "boolean",
 				hidden: true,
-				default: process.env["TMP_JYC"] === "true" ? true : false,
+				default: process.env["TMP_JYC"] === "true",
 			},
 		})
 		.example([

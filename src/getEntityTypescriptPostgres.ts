@@ -2,38 +2,42 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
 import { DbTable } from "./DbTable.js";
 import {
-	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
 	getTablesInfo,
 } from "./postgres/commands.js";
 import { CliReport } from "./report.js";
-import {
-	kababToConstantCase,
-	toPascalCase,
-	toTitleCase,
-} from "./utils/case.js";
-import { yellow } from "kleur/colors";
+import { kababToConstantCase, toTitleCase } from "./utils/case.js";
+import { processColumnType } from "./postgres/processColumnType.js";
 
-function build_column(
-	decorator: string,
-	decoratorArgsValueType: string,
-	decoratorArgsOptions: string[],
-	column_name_tweak: string | null,
-	column_name: string,
-	is_nullable: "YES" | "NO",
-	type: string | null,
-	defaultVal: string | null
-) {
+function build_column({
+	decorator,
+	decoratorArgsValueType,
+	decoratorArgsOptions,
+	columnNameTweak,
+	columnName,
+	isNullable,
+	type,
+	defaultVal,
+}: {
+	decorator: string;
+	decoratorArgsValueType: string;
+	decoratorArgsOptions: string[];
+	columnNameTweak: string | null;
+	columnName: string;
+	isNullable: "YES" | "NO";
+	type: string | null;
+	defaultVal: string | null;
+}) {
 	if (
-		column_name.toLocaleLowerCase() !== column_name ||
-		column_name_tweak ||
-		column_name === "order"
+		columnName.toLocaleLowerCase() !== columnName ||
+		columnNameTweak ||
+		columnName === "order"
 	) {
-		decoratorArgsOptions.unshift(`dbName: '"${column_name}"'`);
+		decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
 	}
 
-	if (is_nullable === "YES") {
+	if (isNullable === "YES") {
 		decoratorArgsOptions.push(`allowNull: true`);
 	}
 
@@ -43,7 +47,7 @@ function build_column(
 	}
 
 	// by default, let's not publish a field "password"
-	if (column_name.toLocaleLowerCase() === "password") {
+	if (columnName.toLocaleLowerCase() === "password") {
 		decoratorArgsOptions.push(`includeInApi: false`);
 	}
 
@@ -52,13 +56,13 @@ function build_column(
 	}
 
 	let current_col = `\t${decorator}(${decoratorArgs.join(", ")})\n\t${
-		column_name_tweak ? column_name_tweak : column_name
+		columnNameTweak ? columnNameTweak : columnName
 	}`;
 
-	if (is_nullable === "YES") {
+	if (isNullable === "YES") {
 		current_col += "?";
 	}
-	if (is_nullable !== "YES" && !defaultVal) {
+	if (isNullable !== "YES" && !defaultVal) {
 		current_col += "!";
 	}
 
@@ -147,28 +151,27 @@ export async function getEntitiesTypescriptPostgres(
 			})
 	);
 
+	const sortedTables = tablesGenerated
+		.slice()
+		.sort((a, b) => a.className.localeCompare(b.className));
+
 	// write "_entities.ts"
 	writeFileSync(
 		`${entities_path}_entities.ts`,
-		`${tablesGenerated
-			.sort((a, b) => a.className.localeCompare(b.className))
+		`${sortedTables
 			.map((e) => {
 				return `import { ${e.className} } from './${e.className}'`;
 			})
 			.join("\n")}
 
 export const entities = [
-	${tablesGenerated
-		.sort((a, b) => a.className.localeCompare(b.className))
-		.map((c) => c.className)
-		.join(",\n  ")}
+	${sortedTables.map((c) => c.className).join(",\n  ")}
 ]`
 	);
 
 	return report;
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 async function getEntityTypescriptPostgres(
 	connectionString: string,
 	enums_path: string,
@@ -198,173 +201,66 @@ async function getEntityTypescriptPostgres(
 
 	let defaultOrderBy: string | null = null;
 	for (const {
-		column_name,
-		column_default,
-		data_type,
-		datetime_precision,
-		character_maximum_length,
-		udt_name,
-		is_nullable,
+		column_name: columnName,
+		column_default: columnDefault,
+		data_type: dataType,
+		datetime_precision: datetimePrecision,
+		character_maximum_length: characterMaximumLength,
+		udt_name: udtName,
+		is_nullable: isNullable,
 	} of await getTableColumnInfo(provider, schema, table.dbName)) {
-		let decorator = "@Fields.string";
-
-		let decoratorArgsValueType: string = "";
 		const decoratorArgsOptions: string[] = [];
-		let type: string | null = "string";
-		let defaultVal = null;
-		const column_name_tweak: string | null = null;
+		const columnNameTweak: string | null = null;
 
-		switch (data_type) {
-			case "decimal":
-			case "real":
-			case "int":
-			case "integer":
-			case "smallint":
-			case "tinyint":
-				type = "number";
-				defaultVal = null;
-				decorator = "@Fields.integer";
-				if (column_default?.startsWith("nextval")) {
-					decorator = "@Fields.autoIncrement";
-				}
-				break;
-			case "bigint":
-			case "float":
-			case "numeric":
-			case "NUMBER":
-			case "money":
-			case "double precision":
-				type = "number";
-				defaultVal = null;
-				if (datetime_precision === 0) {
-					decorator = "@Fields.integer";
-				} else {
-					decorator = "@Fields.number";
-				}
-				// defaultVal = '0'
-				break;
-			case "nchar":
-			case "nvarchar":
-			case "ntext":
-			case "NVARCHAR2":
-			case "text":
-			case "varchar":
-			case "VARCHAR2":
-				if (column_name === "id") {
-					decorator = "@Fields.cuid";
-					type = "string";
-					defaultVal = null;
-				}
-				break;
-			case "character varying":
-				break;
-			case "char":
-			case "CHAR":
-				if (character_maximum_length == 8 && column_default == "('00000000')") {
-					decorator = "@Fields.dateOnly";
-					type = "Date";
-				}
-				break;
-			case "date":
-			case "DATE":
-			case "datetime":
-			case "datetime2":
-			case "timestamp without time zone":
-				if (column_name === "createdAt" || column_name === "dateCreated") {
-					decorator = "@Fields.createdAt";
-					type = null; // will be inferred
-					defaultVal = "new Date()";
-				} else if (column_name === "updatedAt") {
-					decorator = "@Fields.updatedAt";
-					type = null; // will be inferred
-					defaultVal = "new Date()";
-				} else {
-					decorator = "@Fields.date";
-					type = "Date";
-					defaultVal = null;
-				}
-				break;
-			case "bit":
-			case "boolean":
-				decorator = "@Fields.boolean";
-				type = "boolean";
-				break;
-			case "ARRAY":
-				decorator = "@Fields.json";
-				type = null;
-				defaultVal = "[]";
-
-				// TODO: We can probably do better
-				report.typeCouldBeBetter.push(
-					yellow(
-						`For table ["${table.dbName}"] column ["${column_name}"] => The type is not specified.`
-					)
-				);
-				break;
-			case "USER-DEFINED":
-				decorator = `@Field`;
-				decoratorArgsValueType += `() => ${toPascalCase(udt_name)}`;
-
-				type = toPascalCase(udt_name);
-
-				if (column_default !== null) {
-					type = null;
-					defaultVal =
-						toPascalCase(udt_name) + "." + column_default.split("'")[1];
-				}
-
-				const enumDef = await getEnumDef(provider, udt_name);
-
-				enums[toPascalCase(udt_name)] = enumDef.map((e) => e.enumlabel);
-				break;
-			default:
-				console.log("unmanaged", {
-					tableObj: JSON.stringify(table),
-					column_name,
-					data_type,
-					character_maximum_length,
-					column_default,
-					udt_name,
-				});
-				break;
-		}
+		const { decorator, defaultVal, type, decoratorArgsValueType } =
+			await processColumnType({
+				columnName,
+				columnDefault,
+				dataType,
+				datetimePrecision,
+				characterMaximumLength,
+				udtName,
+				report,
+				enums,
+				provider,
+				table,
+			});
 
 		if (
 			!defaultOrderBy &&
-			(column_name === "order" ||
-				column_name === "name" ||
-				column_name === "nom")
+			(columnName === "order" || columnName === "name" || columnName === "nom")
 		) {
-			defaultOrderBy = column_name;
+			defaultOrderBy = columnName;
 		}
 
-		const current_col = build_column(
+		const current_col = build_column({
 			decorator,
 			decoratorArgsValueType,
 			decoratorArgsOptions,
-			column_name_tweak,
-			column_name,
-			is_nullable,
+			columnNameTweak,
+			columnName,
+			isNullable,
 			type,
-			defaultVal
-		);
+			defaultVal,
+		});
 
 		// do we have a foreign key ?
 		const foreign_key = table.foreignKeys.find(
-			(f) => f.columnName === column_name
+			(f) => f.columnName === columnName
 		);
 		let current_col_fk: string | undefined;
 		if (foreign_key) {
-			current_col_fk = build_column(
-				"@Field",
-				`() => ${foreign_key.foreignClassName}`,
-				["lazy: true"],
-				column_name.replace(/Id$/, ""),
-				column_name,
-				"YES",
-				foreign_key.foreignClassName,
-				null
-			);
+			current_col_fk = build_column({
+				decorator: "@Field",
+				decoratorArgsValueType: `() => ${foreign_key.foreignClassName}`,
+				decoratorArgsOptions: ["lazy: true"],
+				// TODO: make the columnNameTweak generic
+				columnNameTweak: columnName.replace(/Id$/, ""),
+				columnName,
+				isNullable: "YES",
+				type: foreign_key.foreignClassName,
+				defaultVal: null,
+			});
 		}
 
 		if (current_col_fk) {
@@ -378,8 +274,7 @@ async function getEntityTypescriptPostgres(
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	function addLineIfNeeded(array: any[], format: (item: string[]) => string) {
+	function addLineIfNeeded(array: string[], format: (item: string) => string) {
 		if (array.length > 0) {
 			return `\n${array.map(format).join("\n")}`;
 		}
