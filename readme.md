@@ -23,13 +23,12 @@ npx remult-cli --help
 ```
 git clone https://github.com/Yedidyar/remult-cli.git
 
-pnpm i -g
+pnpm i
 
-pnpm run dev
+pnpm dev
 
-remult <your-command>
+pnpm start
 ```
-
 
 ## Suggestions for improvement
 
