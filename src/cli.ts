@@ -89,6 +89,8 @@ async function main() {
 	logReport("full", report);
 
 	p.outro(`🎉 Everything is ready!`);
+
+	process.exit(0);
 }
 
 main().catch(console.error);
