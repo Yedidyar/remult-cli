@@ -42,6 +42,11 @@ function build_column(
 		decoratorArgs.push(decoratorArgsValueType);
 	}
 
+	// by default, let's not publish a field "password"
+	if (column_name.toLocaleLowerCase() === "password") {
+		decoratorArgsOptions.push(`includeInApi: false`);
+	}
+
 	if (decoratorArgsOptions.length > 0) {
 		decoratorArgs.push(`{ ${decoratorArgsOptions.join(", ")} }`);
 	}
