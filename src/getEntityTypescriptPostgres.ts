@@ -1,18 +1,19 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import {
-	toPascalCase,
-	toTitleCase,
-	kababToConstantCase,
-} from "./utils/case.js";
+import { DbTable } from "./DbTable.js";
 import {
 	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
 	getTablesInfo,
 } from "./postgres/commands.js";
-import { DbTable } from "./DbTable.js";
-import { CliReport, logReport } from "./report.js";
+import { CliReport } from "./report.js";
+import {
+	kababToConstantCase,
+	toPascalCase,
+	toTitleCase,
+} from "./utils/case.js";
+import { yellow } from "kleur/colors";
 
 function build_column(
 	decorator: string,
@@ -39,6 +40,11 @@ function build_column(
 	let decoratorArgs = [];
 	if (decoratorArgsValueType) {
 		decoratorArgs.push(decoratorArgsValueType);
+	}
+
+	// by default, let's not publish a field "password"
+	if (column_name.toLocaleLowerCase() === "password") {
+		decoratorArgsOptions.push(`includeInApi: false`);
 	}
 
 	if (decoratorArgsOptions.length > 0) {
@@ -71,6 +77,7 @@ function build_column(
 export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
 	outputDir: string,
+	tableProps: string,
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
 	schema = "public",
@@ -79,8 +86,7 @@ export async function getEntitiesTypescriptPostgres(
 		"pg_stat_statements_info",
 		"_prisma_migrations",
 	],
-	include: string[] = [],
-	reportKind: "no" | "numbers" | "full" = "full"
+	include: string[] = []
 ) {
 	const report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
 
@@ -129,6 +135,7 @@ export async function getEntitiesTypescriptPostgres(
 							enums_path,
 							table,
 							schema,
+							tableProps,
 							report
 						);
 						writeFileSync(`${entities_path}${table.className}.ts`, data);
@@ -158,7 +165,7 @@ export const entities = [
 ]`
 	);
 
-	logReport(reportKind, report);
+	return report;
 }
 
 async function getEntityTypescriptPostgres(
@@ -166,6 +173,7 @@ async function getEntityTypescriptPostgres(
 	enums_path: string,
 	table: DbTable,
 	schema: string,
+	tableProps: string,
 	report: CliReport
 ) {
 	const provider = await createPostgresDataProvider({
@@ -176,7 +184,7 @@ async function getEntityTypescriptPostgres(
 
 	let cols = [];
 	let props = [];
-	props.push("allowApiCrud: true");
+	props.push(tableProps);
 	if (table.dbName !== table.className) {
 		if (table.schema === "public" && table.dbName === "user") {
 			// TODO fix dbName should be able to take a schema
@@ -287,7 +295,9 @@ async function getEntityTypescriptPostgres(
 
 				// TODO: We can probably do better
 				report.typeCouldBeBetter.push(
-					`For table ["${table.dbName}"] column ["${column_name}"] => The type is not specified.`
+					yellow(
+						`For table ["${table.dbName}"] column ["${column_name}"] => The type is not specified.`
+					)
 				);
 				break;
 			case "USER-DEFINED":
