@@ -15,7 +15,7 @@ dependencies:
     specifier: ^4.1.5
     version: 4.1.5
   pg:
-    specifier: ^8.11.2
+    specifier: ^8.11.3
     version: 8.11.3
   remult:
     specifier: ^0.22.6
