@@ -41,8 +41,11 @@ then `npx remult-cli`
 
 ```
 git clone https://github.com/Yedidyar/remult-cli.git
+
 pnpm i
-pnpm build
+
+pnpm dev
+
 pnpm start
 ```
 
