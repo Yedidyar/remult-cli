@@ -1,4 +1,5 @@
 import { green, yellow } from "kleur/colors";
+import * as p from "@clack/prompts";
 
 export interface CliReport {
 	typeCouldBeBetter: string[];
@@ -12,20 +13,18 @@ export const logReport = (
 		return;
 	}
 
-	console.log(green(` === Remult cli ===`));
 	if (reportKind === "full") {
 		// No table matching found
 
-		console.log(
-			` - ${green(`Type need to be manually typed`)}:
-     ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n     "))}`
+		p.log.info(
+			`${green(`Type need to be manually typed`)}:
+  ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n  "))}`
 		);
 	} else if (reportKind === "numbers") {
-		console.log(
-			` - ${green(`Type need to be manually typed`)}: ${yellow(
+		p.log.info(
+			`${green(`Type need to be manually typed`)}: ${yellow(
 				report.typeCouldBeBetter.length
 			)}`
 		);
 	}
-	console.log(green(` ==================`));
 };
