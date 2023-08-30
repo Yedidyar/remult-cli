@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import { expect, test, describe } from "vitest";
 import {
 	kababToConstantCase,

@@ -20,7 +20,7 @@ function build_column(
 	decoratorArgsValueType: string,
 	decoratorArgsOptions: string[],
 	column_name_tweak: string | null,
-	column_name: any,
+	column_name: string,
 	is_nullable: "YES" | "NO",
 	type: string | null,
 	defaultVal: string | null
@@ -37,7 +37,7 @@ function build_column(
 		decoratorArgsOptions.push(`allowNull: true`);
 	}
 
-	let decoratorArgs = [];
+	const decoratorArgs = [];
 	if (decoratorArgsValueType) {
 		decoratorArgs.push(decoratorArgsValueType);
 	}
@@ -168,6 +168,7 @@ export const entities = [
 	return report;
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 async function getEntityTypescriptPostgres(
 	connectionString: string,
 	enums_path: string,
@@ -180,10 +181,10 @@ async function getEntityTypescriptPostgres(
 		connectionString,
 	});
 
-	let enums: Record<string, string[]> = {};
+	const enums: Record<string, string[]> = {};
 
-	let cols = [];
-	let props = [];
+	const cols = [];
+	const props = [];
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
 		if (table.schema === "public" && table.dbName === "user") {
@@ -195,7 +196,7 @@ async function getEntityTypescriptPostgres(
 		}
 	}
 
-	let defaultOrderBy: string = undefined!;
+	let defaultOrderBy: string | null = null;
 	for (const {
 		column_name,
 		column_default,
@@ -208,10 +209,10 @@ async function getEntityTypescriptPostgres(
 		let decorator = "@Fields.string";
 
 		let decoratorArgsValueType: string = "";
-		let decoratorArgsOptions: string[] = [];
+		const decoratorArgsOptions: string[] = [];
 		let type: string | null = "string";
 		let defaultVal = null;
-		let column_name_tweak: string | null = null;
+		const column_name_tweak: string | null = null;
 
 		switch (data_type) {
 			case "decimal":
@@ -337,7 +338,7 @@ async function getEntityTypescriptPostgres(
 			defaultOrderBy = column_name;
 		}
 
-		let current_col = build_column(
+		const current_col = build_column(
 			decorator,
 			decoratorArgsValueType,
 			decoratorArgsOptions,
@@ -377,6 +378,7 @@ async function getEntityTypescriptPostgres(
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function addLineIfNeeded(array: any[], format: (item: string[]) => string) {
 		if (array.length > 0) {
 			return `\n${array.map(format).join("\n")}`;
@@ -396,7 +398,7 @@ async function getEntityTypescriptPostgres(
 
 	const enumsKeys = Object.keys(enums);
 
-	let r =
+	const r =
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +

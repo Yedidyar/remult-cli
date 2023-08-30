@@ -64,8 +64,6 @@ async function main() {
 							if (!value.startsWith("postgres")) {
 								return "Please enter a valid connexion string like: postgres://user:pass@host:port/db-name";
 							}
-
-							return;
 						},
 					}),
 			},
@@ -84,7 +82,7 @@ async function main() {
 		tableProps,
 		tmp_jyc
 	);
-	spinner.stop(`Generation done ${green(`✓`)}`);
+	spinner.stop(`Generation done ${green("✓")}`);
 
 	logReport("full", report);
 
