@@ -4,13 +4,13 @@ remult-cli is a command-line tool for generating Remult entities from a PostgreS
 
 ## Usage
 
-1/ By default, just:
+1. By default, just:
 
 ```bash
 npx remult-cli
 ```
 
-2/ You want to know more? Here you go, use the `--help` flag
+2. You want to know more? Here you go, use the `--help` flag
 
 ```bash
 npx remult-cli --help
@@ -27,7 +27,7 @@ npx remult-cli --help
 	npx remult-cli --connectionString postgres://user:pass@host:port/db-name
 ```
 
-3/ remult-cli can also read from your .env file and set all values.
+3. remult-cli can also read from your .env file and set all values.
 
 ```bash
 DATABASE_URL = "postgres://user:pass@host:port/db-name"
