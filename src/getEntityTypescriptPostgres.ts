@@ -2,13 +2,19 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
 import { DbTable } from "./DbTable.js";
 import {
+	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
 	getTablesInfo,
 } from "./postgres/commands.js";
 import { CliReport } from "./report.js";
-import { kababToConstantCase, toTitleCase } from "./utils/case.js";
+import {
+	kababToConstantCase,
+	toPascalCase,
+	toTitleCase,
+} from "./utils/case.js";
 import { processColumnType } from "./postgres/processColumnType.js";
+import { SqlDatabase } from "remult";
 
 function build_column({
 	decorator,
@@ -134,15 +140,22 @@ export async function getEntitiesTypescriptPostgres(
 						!exclude.includes(table.dbName) &&
 						(include.length === 0 || include.includes(table.dbName))
 					) {
-						const data = await getEntityTypescriptPostgres(
-							connectionString,
-							enums_path,
-							table,
-							schema,
-							tableProps,
-							report
+						const { entityString, enumsStrings } =
+							await getEntityTypescriptPostgres(
+								connectionString,
+								table,
+								schema,
+								tableProps,
+								report
+							);
+						writeFileSync(
+							`${entities_path}${table.className}.ts`,
+							entityString
 						);
-						writeFileSync(`${entities_path}${table.className}.ts`, data);
+
+						enumsStrings.forEach(({ enumName, enumString }) => {
+							writeFileSync(`${enums_path}${enumName}.ts`, enumString);
+						});
 						tablesGenerated.push(table);
 					}
 				} catch (error) {
@@ -174,7 +187,6 @@ export const entities = [
 
 async function getEntityTypescriptPostgres(
 	connectionString: string,
-	enums_path: string,
 	table: DbTable,
 	schema: string,
 	tableProps: string,
@@ -213,7 +225,7 @@ async function getEntityTypescriptPostgres(
 		const columnNameTweak: string | null = null;
 
 		const { decorator, defaultVal, type, decoratorArgsValueType } =
-			await processColumnType({
+			processColumnType({
 				columnName,
 				columnDefault,
 				dataType,
@@ -226,10 +238,10 @@ async function getEntityTypescriptPostgres(
 				table,
 			});
 
-		if (
-			!defaultOrderBy &&
-			(columnName === "order" || columnName === "name" || columnName === "nom")
-		) {
+		// TODO: extract this logic from the process column
+		await handleEnums(enums, dataType, provider, udtName);
+
+		if (!defaultOrderBy && ["order", "name", "nom"].includes(columnName)) {
 			defaultOrderBy = columnName;
 		}
 
@@ -274,13 +286,38 @@ async function getEntityTypescriptPostgres(
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	function addLineIfNeeded(array: string[], format: (item: string) => string) {
-		if (array.length > 0) {
-			return `\n${array.map(format).join("\n")}`;
-		}
-		return ``;
-	}
+	const entityString = generateEntityString(table, enums, props, cols);
 
+	const enumsStrings = generateEnumsStrings(enums);
+
+	return { entityString, enumsStrings };
+}
+
+function addLineIfNeeded(array: string[], format: (item: string) => string) {
+	if (array.length > 0) {
+		return `\n${array.map(format).join("\n")}`;
+	}
+	return ``;
+}
+
+const handleEnums = async (
+	enums: Record<string, string[]>,
+	dataType: string,
+	provider: SqlDatabase,
+	udtName: string
+) => {
+	if ("USER-DEFINED" === dataType) {
+		const enumDef = await getEnumDef(provider, udtName);
+		enums[toPascalCase(udtName)] = enumDef.map((e) => e.enumlabel);
+	}
+};
+
+const generateEntityString = (
+	table: DbTable,
+	enums: Record<string, string[]>,
+	props: string[],
+	cols: string[]
+) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
 	const foreignClassNamesToImport = [
@@ -293,7 +330,7 @@ async function getEntityTypescriptPostgres(
 
 	const enumsKeys = Object.keys(enums);
 
-	const r =
+	return (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
@@ -309,14 +346,19 @@ async function getEntityTypescriptPostgres(
 @Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
 export class ${table.className} {
 ${cols.join(`\n`)}}
-`;
+`
+	);
+};
 
-	// write enums
+const generateEnumsStrings = (enums: Record<string, string[]>) => {
+	const res: { enumName: string; enumString: string }[] = [];
+
 	for (const enumName in enums) {
 		const enumValues = enums[enumName];
-		writeFileSync(
-			`${enums_path}${enumName}.ts`,
-			`import { ValueListFieldType } from 'remult'
+
+		res.push({
+			enumName,
+			enumString: `import { ValueListFieldType } from 'remult'
 
 @ValueListFieldType()
 export class ${enumName} {
@@ -331,9 +373,9 @@ export class ${enumName} {
 
   constructor(public id: string, public caption: string) {}
 }
-`
-		);
+`,
+		});
 	}
 
-	return r;
-}
+	return res;
+};

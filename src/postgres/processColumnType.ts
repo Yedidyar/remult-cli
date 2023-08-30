@@ -26,7 +26,7 @@ type DataTypeProcessorFunction = (
 	decoratorArgsValueType: string;
 }> | void;
 
-export const processColumnType = async (
+export const processColumnType = (
 	input: ColumnInfo & {
 		report: CliReport;
 		enums: Record<string, string[]>;
@@ -84,12 +84,6 @@ export const processColumnType = async (
 
 		ARRAY: arrayProcessor,
 		"USER-DEFINED": enumProcessor,
-
-		//  TODO
-
-		// const enumDef = await getEnumDef(provider, udtName);
-
-		// enums[toPascalCase(udtName)] = enumDef.map((e) => e.enumlabel);
 	};
 	const field = dataTypeProcessors[dataType]?.(input);
 
