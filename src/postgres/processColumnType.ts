@@ -14,7 +14,6 @@ interface ColumnInfo {
 }
 
 type DataTypeProcessorFunction = (
-	// i need better name
 	input: ColumnInfo & {
 		report: CliReport;
 		table: DbTable;
@@ -40,8 +39,6 @@ export const processColumnType = (
 		columnName,
 		dataType,
 		udtName,
-		// enums,
-		// provider,
 		table,
 	} = input;
 
