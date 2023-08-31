@@ -16,15 +16,11 @@ function pCancel(cancelText = "Operation cancelled.") {
 }
 
 async function main() {
-	const {
-		connectionString: connectionStringCli,
-		output,
-		tableProps,
-		tmpJYC,
-		customDecorators,
-	} = await yargs(process.argv.slice(2))
+	const { output, tableProps, customDecorators, tmpJyc, ...args } = await yargs(
+		process.argv.slice(2)
+	)
 		.options({
-			connectionString: {
+			"connection-string": {
 				default: process.env["DATABASE_URL"],
 				description:
 					"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
@@ -32,16 +28,16 @@ async function main() {
 			output: {
 				default: process.env["OUTPUT"] ?? "./src/shared",
 			},
-			tableProps: {
+			"table-props": {
 				default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
 				description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
 			},
-			tmpJYC: {
+			"tmp-jyc": {
 				type: "boolean",
 				hidden: true,
 				default: process.env["TMP_JYC"] === "true",
 			},
-			customDecorators: {
+			"custom-decorators": {
 				type: "string",
 				hidden: true,
 				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
@@ -56,8 +52,7 @@ You can use it to replace the default decorators by your own, extending Remult o
 
 	p.intro("🎉 Welcome to remult-cli!");
 
-	let connectionString = connectionStringCli;
-	if (!connectionStringCli) {
+	if (!args.connectionString) {
 		const answer = await p.group(
 			{
 				connectionString: async () =>
@@ -80,7 +75,7 @@ You can use it to replace the default decorators by your own, extending Remult o
 				onCancel: () => pCancel(),
 			}
 		);
-		connectionString = answer.connectionString;
+		args.connectionString = answer.connectionString;
 	}
 
 	let customDecoratorsJSON = {};
@@ -95,11 +90,11 @@ You can use it to replace the default decorators by your own, extending Remult o
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
 	const report = await getEntitiesTypescriptPostgres(
-		connectionString,
+		args.connectionString,
 		output,
 		tableProps,
 		customDecoratorsJSON,
-		tmpJYC
+		tmpJyc
 	);
 	spinner.stop(`Generation done ${green("✓")}`);
 

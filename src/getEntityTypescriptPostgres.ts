@@ -258,7 +258,7 @@ async function getEntityTypescriptPostgres(
 			table,
 		});
 
-		let decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
+		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
 		// TODO: extract this logic from the process column
 		await handleEnums(enums, dataType, provider, udtName);
