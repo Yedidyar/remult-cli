@@ -13,7 +13,9 @@
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"start": "node ./dist/cli.js",
-		"test": "vitest"
+		"test": "vitest",
+		"lint": "eslint src/**/*.ts",
+		"format": "eslint src/**/*.ts --fix"
 	},
 	"files": [
 		"dist"
@@ -28,6 +30,10 @@
 	},
 	"devDependencies": {
 		"@types/yargs": "^17.0.24",
+		"@typescript-eslint/eslint-plugin": "^6.5.0",
+		"@typescript-eslint/parser": "^6.5.0",
+		"eslint": "^8.48.0",
+		"eslint-plugin-sonarjs": "^0.21.0",
 		"prettier": "^2.8.7",
 		"vitest": "^0.34.3"
 	}

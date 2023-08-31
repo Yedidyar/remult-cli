@@ -18,7 +18,7 @@ export const logReport = (
 
 		p.log.info(
 			`${green(`Type need to be manually typed`)}:
-  ${yellow(report.typeCouldBeBetter.map((c) => `${c}`).join("\n  "))}`
+  ${yellow(report.typeCouldBeBetter.join("\n  "))}`
 		);
 	} else if (reportKind === "numbers") {
 		p.log.info(

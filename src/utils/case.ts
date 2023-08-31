@@ -5,7 +5,7 @@ export const toPascalCase = (str: string) => {
 };
 
 export function toCamelCase(str: string) {
-	let words = toPascalCase(str).split("");
+	const words = toPascalCase(str).split("");
 	if (words[0]) {
 		words[0] = words[0].toLowerCase();
 	}
