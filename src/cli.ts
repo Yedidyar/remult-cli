@@ -21,6 +21,7 @@ async function main() {
 		output,
 		tableProps,
 		tmp_jyc,
+		custom_decorators,
 	} = await yargs(process.argv.slice(2))
 		.options({
 			connectionString: {
@@ -39,6 +40,12 @@ async function main() {
 				type: "boolean",
 				hidden: true,
 				default: process.env["TMP_JYC"] === "true",
+			},
+			custom_decorators: {
+				type: "string",
+				hidden: true,
+				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
+				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@KitFields.string#@kitql/remult"}', it will be JSON parsed!`,
 			},
 		})
 		.example([
@@ -73,6 +80,12 @@ async function main() {
 		);
 		connectionString = answer.connectionString;
 	}
+	const custom_decorators2: Record<string, string> = {
+		"@Fields.string": "@KitFields.string#@kitql/remult",
+	};
+	console.log(`custom_decorators2`, JSON.stringify(custom_decorators2));
+
+	console.log(`custom_decorators`, custom_decorators);
 
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
@@ -80,6 +93,7 @@ async function main() {
 		connectionString,
 		output,
 		tableProps,
+		JSON.parse(custom_decorators),
 		tmp_jyc
 	);
 	spinner.stop(`Generation done ${green("✓")}`);
