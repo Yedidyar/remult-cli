@@ -80,12 +80,15 @@ async function main() {
 		);
 		connectionString = answer.connectionString;
 	}
-	const custom_decorators2: Record<string, string> = {
-		"@Fields.string": "@KitFields.string#@kitql/remult",
-	};
-	console.log(`custom_decorators2`, JSON.stringify(custom_decorators2));
 
-	console.log(`custom_decorators`, custom_decorators);
+	let custom_decorators_JSON = {};
+	try {
+		custom_decorators_JSON = JSON.parse(custom_decorators);
+	} catch (error) {
+		if (error instanceof Error) {
+			p.cancel(error.message);
+		}
+	}
 
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
@@ -93,7 +96,7 @@ async function main() {
 		connectionString,
 		output,
 		tableProps,
-		JSON.parse(custom_decorators),
+		custom_decorators_JSON,
 		tmp_jyc
 	);
 	spinner.stop(`Generation done ${green("✓")}`);

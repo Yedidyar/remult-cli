@@ -273,7 +273,10 @@ async function getEntityTypescriptPostgres(
 		// TODO: extract this logic from the process column
 		await handleEnums(enums, dataType, provider, udtName);
 
-		if (!defaultOrderBy && ["order", "name", "nom"].includes(columnName)) {
+		if (
+			!defaultOrderBy &&
+			["order", "name", "nom", "username"].includes(columnName)
+		) {
 			defaultOrderBy = columnName;
 		}
 
