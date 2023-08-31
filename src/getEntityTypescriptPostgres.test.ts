@@ -1,10 +1,10 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import { expect, test, describe } from "vitest";
-import { build_column } from "./getEntityTypescriptPostgres.js";
+import { buildColumn } from "./getEntityTypescriptPostgres.js";
 
 describe("#unit-test build_column", () => {
 	test("string not nullable wo default val", () => {
-		const info = build_column({
+		const info = buildColumn({
 			decorator: "@Fields.string",
 			decoratorArgsValueType: "",
 			decoratorArgsOptions: [],
@@ -21,7 +21,7 @@ describe("#unit-test build_column", () => {
 	});
 
 	test("string nullable wo default val", () => {
-		const info = build_column({
+		const info = buildColumn({
 			decorator: "@Fields.string",
 			decoratorArgsValueType: "",
 			decoratorArgsOptions: [],
@@ -38,7 +38,7 @@ describe("#unit-test build_column", () => {
 	});
 
 	test("string nullable w default val", () => {
-		const info = build_column({
+		const info = buildColumn({
 			decorator: "@Fields.string",
 			decoratorArgsValueType: "",
 			decoratorArgsOptions: [],
@@ -55,7 +55,7 @@ describe("#unit-test build_column", () => {
 	});
 
 	test("password", () => {
-		const info = build_column({
+		const info = buildColumn({
 			decorator: "@Fields.string",
 			decoratorArgsValueType: "",
 			decoratorArgsOptions: [],
@@ -72,7 +72,7 @@ describe("#unit-test build_column", () => {
 	});
 
 	test("email", () => {
-		const info = build_column({
+		const info = buildColumn({
 			decorator: "@Fields.string",
 			decoratorArgsValueType: "",
 			decoratorArgsOptions: [],

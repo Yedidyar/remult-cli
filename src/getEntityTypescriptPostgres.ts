@@ -22,7 +22,7 @@ type CliColumnInfo = {
 	decorator_fn: string;
 	decorator_import: string | null;
 };
-export function build_column({
+export function buildColumn({
 	decorator,
 	decoratorArgsValueType,
 	decoratorArgsOptions,
@@ -100,7 +100,7 @@ export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
 	outputDir: string,
 	tableProps: string,
-	custom_decorators: Record<string, string> = {},
+	customDecorators: Record<string, string> = {},
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
 	schema = "public",
@@ -159,7 +159,7 @@ export async function getEntitiesTypescriptPostgres(
 								schema,
 								table,
 								tableProps,
-								custom_decorators,
+								customDecorators,
 								report
 							);
 						writeFileSync(
@@ -204,7 +204,7 @@ async function getEntityTypescriptPostgres(
 	schema: string,
 	table: DbTable,
 	tableProps: string,
-	custom_decorators: Record<string, string>,
+	customDecorators: Record<string, string>,
 	report: CliReport
 ) {
 	const provider = await createPostgresDataProvider({
@@ -241,7 +241,7 @@ async function getEntityTypescriptPostgres(
 		const columnNameTweak: string | null = null;
 
 		const {
-			decorator: decorator_infered,
+			decorator: decoratorInfered,
 			defaultVal,
 			type,
 			decoratorArgsValueType,
@@ -258,14 +258,10 @@ async function getEntityTypescriptPostgres(
 			table,
 		});
 
-		// const custom_decorators: Record<string, string> = {
-		// 	"@Fields.string": "@KitFields.string#@kitql/remult",
-		// };
-
-		let decorator = decorator_infered;
-		for (const custom in custom_decorators) {
+		let decorator = decoratorInfered;
+		for (const custom in customDecorators) {
 			if (decorator === custom) {
-				decorator = custom_decorators[custom] ?? "THIS_CANNOT_HAPPEN";
+				decorator = customDecorators[custom] ?? "THIS_CANNOT_HAPPEN";
 				break;
 			}
 		}
@@ -280,7 +276,7 @@ async function getEntityTypescriptPostgres(
 			defaultOrderBy = columnName;
 		}
 
-		const current_col = build_column({
+		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
 			decoratorArgsOptions,
@@ -290,36 +286,36 @@ async function getEntityTypescriptPostgres(
 			type,
 			defaultVal,
 		});
-		if (current_col.decorator_import) {
-			additionnalImports.push(current_col.decorator_import);
+		if (currentCol.decorator_import) {
+			additionnalImports.push(currentCol.decorator_import);
 		}
 
 		// do we have a foreign key ?
-		const foreign_key = table.foreignKeys.find(
+		const foreignKey = table.foreignKeys.find(
 			(f) => f.columnName === columnName
 		);
-		let current_col_fk: CliColumnInfo | undefined;
-		if (foreign_key) {
-			current_col_fk = build_column({
+		let currentColFk: CliColumnInfo | undefined;
+		if (foreignKey) {
+			currentColFk = buildColumn({
 				decorator: "@Field",
-				decoratorArgsValueType: `() => ${foreign_key.foreignClassName}`,
+				decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
 				decoratorArgsOptions: ["lazy: true"],
 				// TODO: make the columnNameTweak generic
 				columnNameTweak: columnName.replace(/Id$/, ""),
 				columnName,
 				isNullable: "YES",
-				type: foreign_key.foreignClassName,
+				type: foreignKey.foreignClassName,
 				defaultVal: null,
 			});
-			if (current_col_fk.decorator_import) {
-				additionnalImports.push(current_col_fk.decorator_import);
+			if (currentColFk.decorator_import) {
+				additionnalImports.push(currentColFk.decorator_import);
 			}
 		}
 
-		if (current_col_fk) {
-			cols.push(current_col_fk.col + `\n`);
+		if (currentColFk) {
+			cols.push(currentColFk.col + `\n`);
 		} else {
-			cols.push(current_col.col + `\n`);
+			cols.push(currentCol.col + `\n`);
 		}
 	}
 

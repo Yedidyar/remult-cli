@@ -17,11 +17,11 @@ function pCancel(cancelText = "Operation cancelled.") {
 
 async function main() {
 	const {
-		connectionString: connectionString_cli,
+		connectionString: connectionStringCli,
 		output,
 		tableProps,
-		tmp_jyc,
-		custom_decorators,
+		tmpJYC,
+		customDecorators,
 	} = await yargs(process.argv.slice(2))
 		.options({
 			connectionString: {
@@ -36,12 +36,12 @@ async function main() {
 				default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
 				description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
 			},
-			tmp_jyc: {
+			tmpJYC: {
 				type: "boolean",
 				hidden: true,
 				default: process.env["TMP_JYC"] === "true",
 			},
-			custom_decorators: {
+			customDecorators: {
 				type: "string",
 				hidden: true,
 				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
@@ -54,8 +54,8 @@ async function main() {
 
 	p.intro("🎉 Welcome to remult-cli!");
 
-	let connectionString = connectionString_cli;
-	if (!connectionString_cli) {
+	let connectionString = connectionStringCli;
+	if (!connectionStringCli) {
 		const answer = await p.group(
 			{
 				connectionString: async () =>
@@ -81,9 +81,9 @@ async function main() {
 		connectionString = answer.connectionString;
 	}
 
-	let custom_decorators_JSON = {};
+	let customDecoratorsJSON = {};
 	try {
-		custom_decorators_JSON = JSON.parse(custom_decorators);
+		customDecoratorsJSON = JSON.parse(customDecorators);
 	} catch (error) {
 		if (error instanceof Error) {
 			p.cancel(error.message);
@@ -96,8 +96,8 @@ async function main() {
 		connectionString,
 		output,
 		tableProps,
-		custom_decorators_JSON,
-		tmp_jyc
+		customDecoratorsJSON,
+		tmpJYC
 	);
 	spinner.stop(`Generation done ${green("✓")}`);
 
