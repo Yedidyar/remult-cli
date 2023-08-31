@@ -70,10 +70,6 @@ pnpm dev
 pnpm start
 ```
 
-## Suggestions for Improvement
-
-- **Additional Database Support**: We plan to add support for other databases, such as MySQL and Oracle, in future releases.
-
 ## Contribution
 
 We welcome contributions from the community! If you find any issues or have ideas for enhancements, please submit bug reports, feature requests, or pull requests through our [GitHub repository](https://github.com/Yedidyar/remult-cli).
