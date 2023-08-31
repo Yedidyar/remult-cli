@@ -1,16 +1,18 @@
 import type { ForeignKey } from "./postgres/commands.js";
 import { toCamelCase, toPascalCase } from "./utils/case.js";
 
+export interface DbTableForeignKey {
+	columnName: string;
+	foreignClassName: string;
+	isSelfReferenced: boolean;
+}
+
 export class DbTable {
 	schema: string;
 	dbName: string;
 	key: string;
 	className: string;
-	foreignKeys: {
-		columnName: string;
-		foreignClassName: string;
-		isSelfReferenced: boolean;
-	}[];
+	foreignKeys: DbTableForeignKey[];
 
 	constructor(
 		dbName: string,

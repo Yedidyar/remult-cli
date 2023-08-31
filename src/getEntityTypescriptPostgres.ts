@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { DbTable } from "./DbTable.js";
+import { DbTable, DbTableForeignKey } from "./DbTable.js";
 import {
 	getEnumDef,
 	getForeignKeys,
@@ -25,17 +25,17 @@ type CliColumnInfo = {
 export function buildColumn({
 	decorator,
 	decoratorArgsValueType,
-	decoratorArgsOptions,
 	columnNameTweak,
 	columnName,
 	isNullable,
 	type,
 	defaultVal,
+	decoratorArgsOptions = [],
 }: {
 	decorator: string;
 	decoratorArgsValueType: string;
-	decoratorArgsOptions: string[];
-	columnNameTweak: string | null;
+	decoratorArgsOptions?: string[];
+	columnNameTweak?: string;
 	columnName: string;
 	isNullable: "YES" | "NO";
 	type: string | null;
@@ -214,7 +214,7 @@ async function getEntityTypescriptPostgres(
 	const enums: Record<string, string[]> = {};
 	const additionnalImports: string[] = [];
 
-	const cols = [];
+	const cols: string[] = [];
 	const props = [];
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
@@ -237,9 +237,6 @@ async function getEntityTypescriptPostgres(
 		udt_name: udtName,
 		is_nullable: isNullable,
 	} of await getTableColumnInfo(provider, schema, table.dbName)) {
-		const decoratorArgsOptions: string[] = [];
-		const columnNameTweak: string | null = null;
-
 		const {
 			decorator: decoratorInfered,
 			defaultVal,
@@ -270,11 +267,18 @@ async function getEntityTypescriptPostgres(
 			defaultOrderBy = columnName;
 		}
 
+		const foreignKey = table.foreignKeys.find(
+			(f) => f.columnName === columnName
+		);
+
+		if (foreignKey) {
+			handleForeignKeyCol(foreignKey, columnName, additionnalImports, cols);
+			continue;
+		}
+
 		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
-			decoratorArgsOptions,
-			columnNameTweak,
 			columnName,
 			isNullable,
 			type,
@@ -283,34 +287,7 @@ async function getEntityTypescriptPostgres(
 		if (currentCol.decorator_import) {
 			additionnalImports.push(currentCol.decorator_import);
 		}
-
-		// do we have a foreign key ?
-		const foreignKey = table.foreignKeys.find(
-			(f) => f.columnName === columnName
-		);
-		let currentColFk: CliColumnInfo | undefined;
-		if (foreignKey) {
-			currentColFk = buildColumn({
-				decorator: "@Field",
-				decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-				decoratorArgsOptions: ["lazy: true"],
-				// TODO: make the columnNameTweak generic
-				columnNameTweak: columnName.replace(/Id$/, ""),
-				columnName,
-				isNullable: "YES",
-				type: foreignKey.foreignClassName,
-				defaultVal: null,
-			});
-			if (currentColFk.decorator_import) {
-				additionnalImports.push(currentColFk.decorator_import);
-			}
-		}
-
-		if (currentColFk) {
-			cols.push(currentColFk.col + `\n`);
-		} else {
-			cols.push(currentCol.col + `\n`);
-		}
+		cols.push(currentCol.col + `\n`);
 	}
 
 	if (defaultOrderBy) {
@@ -336,6 +313,33 @@ function addLineIfNeeded(array: string[], format: (item: string) => string) {
 	}
 	return ``;
 }
+
+const handleForeignKeyCol = (
+	foreignKey: DbTableForeignKey,
+	columnName: string,
+	additionnalImports: string[],
+	cols: string[]
+) => {
+	const currentColFk = buildColumn({
+		decorator: "@Field",
+		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
+		decoratorArgsOptions: ["lazy: true"],
+		// TODO: make the columnNameTweak generic
+		columnNameTweak: columnName.replace(/Id$/, ""),
+		columnName,
+		isNullable: "YES",
+		type: foreignKey.foreignClassName,
+		defaultVal: null,
+	});
+
+	if (currentColFk.decorator_import) {
+		additionnalImports.push(currentColFk.decorator_import);
+	}
+
+	if (currentColFk) {
+		cols.push(currentColFk.col + `\n`);
+	}
+};
 
 const handleEnums = async (
 	enums: Record<string, string[]>,
