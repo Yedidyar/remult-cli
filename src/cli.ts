@@ -45,7 +45,9 @@ async function main() {
 				type: "string",
 				hidden: true,
 				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
-				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@KitFields.string#@kitql/remult"}', it will be JSON parsed!`,
+				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@MyFields.string#./MyFields"}', it will be JSON parsed!
+Like this, '@Fields.string' will be replaced by '@MyFields.string' and 'MyFields' is imported from './MyFields'
+You can use it to replace the default decorators by your own, extending Remult ones.`,
 			},
 		})
 		.example([

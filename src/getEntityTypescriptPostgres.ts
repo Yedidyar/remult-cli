@@ -258,13 +258,7 @@ async function getEntityTypescriptPostgres(
 			table,
 		});
 
-		let decorator = decoratorInfered;
-		for (const custom in customDecorators) {
-			if (decorator === custom) {
-				decorator = customDecorators[custom] ?? "THIS_CANNOT_HAPPEN";
-				break;
-			}
-		}
+		let decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
 		// TODO: extract this logic from the process column
 		await handleEnums(enums, dataType, provider, udtName);
@@ -378,7 +372,7 @@ const generateEntityString = (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
-		`${addLineIfNeeded([...new Set(additionnalImports)], (c) => `${c}`)}` +
+		`${addLineIfNeeded([...new Set(additionnalImports)], (c) => c)}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,
 			(c) => `import { ${c} } from './${c}'`
