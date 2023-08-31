@@ -17,12 +17,12 @@ export const logReport = (
 		// No table matching found
 
 		p.log.info(
-			`${green("Type need to be manually typed")}:
+			`${green(`Type need to be manually typed`)}:
   ${yellow(report.typeCouldBeBetter.join("\n  "))}`
 		);
 	} else if (reportKind === "numbers") {
 		p.log.info(
-			`${green("Type need to be manually typed")}: ${yellow(
+			`${green(`Type need to be manually typed`)}: ${yellow(
 				report.typeCouldBeBetter.length
 			)}`
 		);
