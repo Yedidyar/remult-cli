@@ -5,7 +5,7 @@ import {
 	toCamelCase,
 	toPascalCase,
 	toTitleCase,
-} from "../case.js";
+} from "./case.js";
 
 describe("#unit-test toPascalCase", () => {
 	test("empty string", () => {

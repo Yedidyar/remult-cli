@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
-import { DbTable } from "./DbTable.js";
+import { DbTable, DbTableForeignKey } from "./DbTable.js";
 import {
 	getEnumDef,
 	getForeignKeys,
@@ -15,26 +15,32 @@ import {
 } from "./utils/case.js";
 import { processColumnType } from "./postgres/processColumnType.js";
 import { SqlDatabase } from "remult";
+import { toFnAndImport } from "./utils/format.js";
 
-function build_column({
+type CliColumnInfo = {
+	col: string;
+	decorator_fn: string;
+	decorator_import: string | null;
+};
+export function buildColumn({
 	decorator,
 	decoratorArgsValueType,
-	decoratorArgsOptions,
 	columnNameTweak,
 	columnName,
 	isNullable,
 	type,
 	defaultVal,
+	decoratorArgsOptions = [],
 }: {
 	decorator: string;
 	decoratorArgsValueType: string;
-	decoratorArgsOptions: string[];
-	columnNameTweak: string | null;
+	decoratorArgsOptions?: string[];
+	columnNameTweak?: string;
 	columnName: string;
 	isNullable: "YES" | "NO";
 	type: string | null;
 	defaultVal: string | null;
-}) {
+}): CliColumnInfo {
 	if (
 		columnName.toLocaleLowerCase() !== columnName ||
 		columnNameTweak ||
@@ -55,13 +61,20 @@ function build_column({
 	// by default, let's not publish a field "password"
 	if (columnName.toLocaleLowerCase() === "password") {
 		decoratorArgsOptions.push(`includeInApi: false`);
+		decoratorArgsOptions.push(`inputType: 'password'`);
+	}
+	if (columnName.toLocaleLowerCase() === "email") {
+		decoratorArgsOptions.push(`inputType: 'email'`);
 	}
 
 	if (decoratorArgsOptions.length > 0) {
 		decoratorArgs.push(`{ ${decoratorArgsOptions.join(", ")} }`);
 	}
 
-	let current_col = `\t${decorator}(${decoratorArgs.join(", ")})\n\t${
+	const { str_fn: decorator_fn, str_import: decorator_import } =
+		toFnAndImport(decorator);
+
+	let current_col = `\t${decorator_fn}(${decoratorArgs.join(", ")})\n\t${
 		columnNameTweak ? columnNameTweak : columnName
 	}`;
 
@@ -80,14 +93,14 @@ function build_column({
 		current_col += " = " + defaultVal;
 	}
 
-	return current_col;
+	return { col: current_col, decorator_fn, decorator_import };
 }
 
-// TODO: everything optionnal
 export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
 	outputDir: string,
 	tableProps: string,
+	customDecorators: Record<string, string> = {},
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
 	schema = "public",
@@ -143,9 +156,10 @@ export async function getEntitiesTypescriptPostgres(
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
 								connectionString,
-								table,
 								schema,
+								table,
 								tableProps,
+								customDecorators,
 								report
 							);
 						writeFileSync(
@@ -187,9 +201,10 @@ export const entities = [
 
 async function getEntityTypescriptPostgres(
 	connectionString: string,
-	table: DbTable,
 	schema: string,
+	table: DbTable,
 	tableProps: string,
+	customDecorators: Record<string, string>,
 	report: CliReport
 ) {
 	const provider = await createPostgresDataProvider({
@@ -197,8 +212,9 @@ async function getEntityTypescriptPostgres(
 	});
 
 	const enums: Record<string, string[]> = {};
+	const additionnalImports: string[] = [];
 
-	const cols = [];
+	const cols: string[] = [];
 	const props = [];
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
@@ -221,72 +237,70 @@ async function getEntityTypescriptPostgres(
 		udt_name: udtName,
 		is_nullable: isNullable,
 	} of await getTableColumnInfo(provider, schema, table.dbName)) {
-		const decoratorArgsOptions: string[] = [];
-		const columnNameTweak: string | null = null;
+		const {
+			decorator: decoratorInfered,
+			defaultVal,
+			type,
+			decoratorArgsValueType,
+		} = processColumnType({
+			columnName,
+			columnDefault,
+			dataType,
+			datetimePrecision,
+			characterMaximumLength,
+			udtName,
+			report,
+			enums,
+			provider,
+			table,
+		});
 
-		const { decorator, defaultVal, type, decoratorArgsValueType } =
-			processColumnType({
-				columnName,
-				columnDefault,
-				dataType,
-				datetimePrecision,
-				characterMaximumLength,
-				udtName,
-				report,
-				enums,
-				provider,
-				table,
-			});
+		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
 		// TODO: extract this logic from the process column
 		await handleEnums(enums, dataType, provider, udtName);
 
-		if (!defaultOrderBy && ["order", "name", "nom"].includes(columnName)) {
+		if (
+			!defaultOrderBy &&
+			["order", "name", "nom", "username"].includes(columnName)
+		) {
 			defaultOrderBy = columnName;
 		}
 
-		const current_col = build_column({
+		const foreignKey = table.foreignKeys.find(
+			(f) => f.columnName === columnName
+		);
+
+		if (foreignKey) {
+			handleForeignKeyCol(foreignKey, columnName, additionnalImports, cols);
+			continue;
+		}
+
+		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
-			decoratorArgsOptions,
-			columnNameTweak,
 			columnName,
 			isNullable,
 			type,
 			defaultVal,
 		});
-
-		// do we have a foreign key ?
-		const foreign_key = table.foreignKeys.find(
-			(f) => f.columnName === columnName
-		);
-		let current_col_fk: string | undefined;
-		if (foreign_key) {
-			current_col_fk = build_column({
-				decorator: "@Field",
-				decoratorArgsValueType: `() => ${foreign_key.foreignClassName}`,
-				decoratorArgsOptions: ["lazy: true"],
-				// TODO: make the columnNameTweak generic
-				columnNameTweak: columnName.replace(/Id$/, ""),
-				columnName,
-				isNullable: "YES",
-				type: foreign_key.foreignClassName,
-				defaultVal: null,
-			});
+		if (currentCol.decorator_import) {
+			additionnalImports.push(currentCol.decorator_import);
 		}
-
-		if (current_col_fk) {
-			cols.push(current_col_fk + `\n`);
-		} else {
-			cols.push(current_col + `\n`);
-		}
+		cols.push(currentCol.col + `\n`);
 	}
 
 	if (defaultOrderBy) {
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	const entityString = generateEntityString(table, enums, props, cols);
+	const entityString = generateEntityString(
+		table,
+		enums,
+		props,
+		cols,
+		additionnalImports
+	);
 
 	const enumsStrings = generateEnumsStrings(enums);
 
@@ -299,6 +313,33 @@ function addLineIfNeeded(array: string[], format: (item: string) => string) {
 	}
 	return ``;
 }
+
+const handleForeignKeyCol = (
+	foreignKey: DbTableForeignKey,
+	columnName: string,
+	additionnalImports: string[],
+	cols: string[]
+) => {
+	const currentColFk = buildColumn({
+		decorator: "@Field",
+		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
+		decoratorArgsOptions: ["lazy: true"],
+		// TODO: make the columnNameTweak generic
+		columnNameTweak: columnName.replace(/Id$/, ""),
+		columnName,
+		isNullable: "YES",
+		type: foreignKey.foreignClassName,
+		defaultVal: null,
+	});
+
+	if (currentColFk.decorator_import) {
+		additionnalImports.push(currentColFk.decorator_import);
+	}
+
+	if (currentColFk) {
+		cols.push(currentColFk.col + `\n`);
+	}
+};
 
 const handleEnums = async (
 	enums: Record<string, string[]>,
@@ -316,7 +357,8 @@ const generateEntityString = (
 	table: DbTable,
 	enums: Record<string, string[]>,
 	props: string[],
-	cols: string[]
+	cols: string[],
+	additionnalImports: string[]
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
@@ -334,6 +376,7 @@ const generateEntityString = (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
+		`${addLineIfNeeded([...new Set(additionnalImports)], (c) => c)}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,
 			(c) => `import { ${c} } from './${c}'`

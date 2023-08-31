@@ -16,14 +16,11 @@ function pCancel(cancelText = "Operation cancelled.") {
 }
 
 async function main() {
-	const {
-		connectionString: connectionString_cli,
-		output,
-		tableProps,
-		tmp_jyc,
-	} = await yargs(process.argv.slice(2))
+	const { output, tableProps, customDecorators, tmpJyc, ...args } = await yargs(
+		process.argv.slice(2)
+	)
 		.options({
-			connectionString: {
+			"connection-string": {
 				default: process.env["DATABASE_URL"],
 				description:
 					"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
@@ -31,14 +28,22 @@ async function main() {
 			output: {
 				default: process.env["OUTPUT"] ?? "./src/shared",
 			},
-			tableProps: {
+			"table-props": {
 				default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
 				description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
 			},
-			tmp_jyc: {
+			"tmp-jyc": {
 				type: "boolean",
 				hidden: true,
 				default: process.env["TMP_JYC"] === "true",
+			},
+			"custom-decorators": {
+				type: "string",
+				hidden: true,
+				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
+				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@MyFields.string#./MyFields"}', it will be JSON parsed!
+Like this, '@Fields.string' will be replaced by '@MyFields.string' and 'MyFields' is imported from './MyFields'
+You can use it to replace the default decorators by your own, extending Remult ones.`,
 			},
 		})
 		.example([
@@ -47,8 +52,7 @@ async function main() {
 
 	p.intro("🎉 Welcome to remult-cli!");
 
-	let connectionString = connectionString_cli;
-	if (!connectionString_cli) {
+	if (!args.connectionString) {
 		const answer = await p.group(
 			{
 				connectionString: async () =>
@@ -71,16 +75,26 @@ async function main() {
 				onCancel: () => pCancel(),
 			}
 		);
-		connectionString = answer.connectionString;
+		args.connectionString = answer.connectionString;
+	}
+
+	let customDecoratorsJSON = {};
+	try {
+		customDecoratorsJSON = JSON.parse(customDecorators);
+	} catch (error) {
+		if (error instanceof Error) {
+			p.cancel(error.message);
+		}
 	}
 
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
 	const report = await getEntitiesTypescriptPostgres(
-		connectionString,
+		args.connectionString,
 		output,
 		tableProps,
-		tmp_jyc
+		customDecoratorsJSON,
+		tmpJyc
 	);
 	spinner.stop(`Generation done ${green("✓")}`);
 
