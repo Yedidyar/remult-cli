@@ -16,9 +16,14 @@ function pCancel(cancelText = "Operation cancelled.") {
 }
 
 async function main() {
-	const { output, tableProps, customDecorators, tmpJyc, ...args } = await yargs(
-		process.argv.slice(2)
-	)
+	const {
+		output,
+		tableProps,
+		customDecorators,
+		tmpJyc,
+		defaultOrderBy,
+		...args
+	} = await yargs(process.argv.slice(2))
 		.options({
 			"connection-string": {
 				default: process.env["DATABASE_URL"],
@@ -44,6 +49,11 @@ async function main() {
 				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@MyFields.string#./MyFields"}', it will be JSON parsed!
 Like this, '@Fields.string' will be replaced by '@MyFields.string' and 'MyFields' is imported from './MyFields'
 You can use it to replace the default decorators by your own, extending Remult ones.`,
+			},
+			"default-order-by": {
+				type: "array",
+				array: true,
+				default: process.env["DEFAULT_ORDER_BY"]?.split(", "),
 			},
 		})
 		.example([
@@ -93,6 +103,7 @@ You can use it to replace the default decorators by your own, extending Remult o
 		args.connectionString,
 		output,
 		tableProps,
+		defaultOrderBy,
 		customDecoratorsJSON,
 		tmpJyc
 	);
