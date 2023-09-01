@@ -85,7 +85,8 @@ export function buildColumn({
 		current_col += "!";
 	}
 
-	if (type) {
+	// let's add the type only if we have it and if we don't have a default value
+	if (!defaultVal && type) {
 		current_col += ": ";
 		current_col += type;
 	}
