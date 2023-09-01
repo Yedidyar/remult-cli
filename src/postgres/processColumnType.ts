@@ -23,6 +23,7 @@ type DataTypeProcessorFunction = (
 	decorator: string;
 	defaultVal: string;
 	decoratorArgsValueType: string;
+	decoratorArgsOptions: string[];
 }> | void;
 
 export const processColumnType = (
@@ -98,6 +99,7 @@ export const processColumnType = (
 	return {
 		decorator: field?.decorator ?? "@Fields.string",
 		decoratorArgsValueType: field?.decoratorArgsValueType ?? "",
+		decoratorArgsOptions: field?.decoratorArgsOptions ?? [],
 		type: field?.type === undefined ? "string" : field?.type,
 		defaultVal: field?.defaultVal ?? null,
 	};
@@ -124,27 +126,30 @@ const booleanProcessor: DataTypeProcessorFunction = () => {
 	};
 };
 
-const dateProcessor: DataTypeProcessorFunction = ({ columnName }) => {
+const dateProcessor: DataTypeProcessorFunction = ({
+	columnName,
+	columnDefault,
+	udtName,
+}) => {
+	const toRet = {
+		decorator: "@Fields.date",
+		type: "Date",
+		defaultVal: columnDefault !== null ? "new Date()" : "",
+	};
+
 	if (columnName === "createdAt" || columnName === "dateCreated") {
-		return {
-			decorator: "@Fields.createdAt",
-			type: null, // will be inferred
-			defaultVal: "new Date()",
-		};
+		toRet.decorator = "@Fields.createdAt";
 	}
 
 	if (columnName === "updatedAt") {
-		return {
-			decorator: "@Fields.updatedAt",
-			type: null, // will be inferred
-			defaultVal: "new Date()",
-		};
+		toRet.decorator = "@Fields.updatedAt";
 	}
 
-	return {
-		decorator: "@Fields.date",
-		type: "Date",
-	};
+	if (udtName === "date") {
+		toRet.decorator = "@Fields.dateOnly";
+	}
+
+	return toRet;
 };
 
 const enumProcessor: DataTypeProcessorFunction = ({
@@ -154,6 +159,7 @@ const enumProcessor: DataTypeProcessorFunction = ({
 	return {
 		decorator: `@Field`,
 		decoratorArgsValueType: `() => ${toPascalCase(udtName)}`,
+		decoratorArgsOptions: ["inputType: 'selectEnum'"],
 		type: columnDefault === null ? toPascalCase(udtName) : null,
 		defaultVal:
 			columnDefault !== null
