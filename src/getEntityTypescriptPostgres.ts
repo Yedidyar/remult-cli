@@ -243,6 +243,7 @@ async function getEntityTypescriptPostgres(
 			defaultVal,
 			type,
 			decoratorArgsValueType,
+			decoratorArgsOptions,
 		} = processColumnType({
 			columnName,
 			columnDefault,
@@ -280,6 +281,7 @@ async function getEntityTypescriptPostgres(
 		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
+			decoratorArgsOptions,
 			columnName,
 			isNullable,
 			type,
@@ -324,7 +326,7 @@ const handleForeignKeyCol = (
 	const currentColFk = buildColumn({
 		decorator: "@Field",
 		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-		decoratorArgsOptions: ["lazy: true"],
+		decoratorArgsOptions: ["lazy: true", "inputType: 'selectEntity'"],
 		// TODO: make the columnNameTweak generic
 		columnNameTweak: columnName.replace(/Id$/, ""),
 		columnName,

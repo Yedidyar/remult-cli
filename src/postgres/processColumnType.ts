@@ -23,6 +23,7 @@ type DataTypeProcessorFunction = (
 	decorator: string;
 	defaultVal: string;
 	decoratorArgsValueType: string;
+	decoratorArgsOptions: string[];
 }> | void;
 
 export const processColumnType = (
@@ -98,6 +99,7 @@ export const processColumnType = (
 	return {
 		decorator: field?.decorator ?? "@Fields.string",
 		decoratorArgsValueType: field?.decoratorArgsValueType ?? "",
+		decoratorArgsOptions: field?.decoratorArgsOptions ?? [],
 		type: field?.type === undefined ? "string" : field?.type,
 		defaultVal: field?.defaultVal ?? null,
 	};
@@ -157,6 +159,7 @@ const enumProcessor: DataTypeProcessorFunction = ({
 	return {
 		decorator: `@Field`,
 		decoratorArgsValueType: `() => ${toPascalCase(udtName)}`,
+		decoratorArgsOptions: ["inputType: 'selectEnum'"],
 		type: columnDefault === null ? toPascalCase(udtName) : null,
 		defaultVal:
 			columnDefault !== null
