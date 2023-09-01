@@ -1,4 +1,15 @@
-# remult-cli [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/Yedidyar/remult-cli/blob/add-license/LICENSE) [![npm version](https://img.shields.io/npm/v/remult-cli.svg?style=flat)](https://www.npmjs.com/package/remult-cli)
+<div align="center">
+		<img src="https://github.com/Yedidyar/remult-cli/assets/42849252/05f896c7-e778-4588-9ace-21288b56344a" width="200" height="200">
+  <h1>Remult CLI</h1>
+
+
+ <a href="https://raw.githubusercontent.com/remult/remult/master/LICENSE" rel="nofollow">
+		<img alt="GitHub license" src="https://img.shields.io/badge/license-MIT-blue.svg">
+	</a>
+	<a href="https://www.npmjs.com/package/remult-cli" rel="nofollow">
+        	<img src="https://img.shields.io/npm/v/remult-cli.svg?style=flat"/>
+  </a>
+</div>
 
 `remult-cli` is a command-line tool designed to simplify the process of generating [Remult](https://remult.dev/) entities from a PostgreSQL database.
 
