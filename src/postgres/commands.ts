@@ -1,5 +1,8 @@
 import { SqlDatabase } from "remult";
 
+// usefull for debuging
+// SqlDatabase.LogToConsole = "oneLiner";
+
 export interface TableInfo {
 	table_name: string;
 	table_schema: string;
