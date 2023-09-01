@@ -1,6 +1,6 @@
 {
 	"name": "remult-cli",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"license": "MIT",
 	"bin": {
 		"remult": "dist/cli.js"
@@ -18,7 +18,7 @@
 		"format": "eslint src/**/*.ts --fix",
 		"changeset": "changeset",
 		"versioning": "changeset version",
-		"publish": "changeset publish"
+		"changeset-publish": "changeset publish"
 	},
 	"files": [
 		"dist"
