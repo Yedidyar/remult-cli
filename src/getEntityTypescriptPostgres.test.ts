@@ -43,11 +43,11 @@ describe("#unit-test build_column", () => {
 			columnName: "name",
 			isNullable: "YES",
 			type: "string",
-			defaultVal: "Hello World",
+			defaultVal: "'Hello World'",
 		});
 		expect(info.col).toMatchInlineSnapshot(`
 			"	@Fields.string({ allowNull: true })
-				name?: string = Hello World"
+				name? = 'Hello World'"
 		`);
 	});
 
