@@ -1,5 +1,5 @@
 <div align="center">
-		<img src="https://github.com/Yedidyar/remult-cli/tree/main/assets/logo.png" width="200" height="200">
+		<img src="https://raw.githubusercontent.com/Yedidyar/remult-cli/main/assets/logo.png" width="200" height="200">
   <h1>Remult CLI</h1>
 
 
