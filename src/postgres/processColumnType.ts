@@ -124,27 +124,30 @@ const booleanProcessor: DataTypeProcessorFunction = () => {
 	};
 };
 
-const dateProcessor: DataTypeProcessorFunction = ({ columnName }) => {
+const dateProcessor: DataTypeProcessorFunction = ({
+	columnName,
+	columnDefault,
+	udtName,
+}) => {
+	const toRet = {
+		decorator: "@Fields.date",
+		type: "Date",
+		defaultVal: columnDefault !== null ? "new Date()" : "",
+	};
+
 	if (columnName === "createdAt" || columnName === "dateCreated") {
-		return {
-			decorator: "@Fields.createdAt",
-			type: null, // will be inferred
-			defaultVal: "new Date()",
-		};
+		toRet.decorator = "@Fields.createdAt";
 	}
 
 	if (columnName === "updatedAt") {
-		return {
-			decorator: "@Fields.updatedAt",
-			type: null, // will be inferred
-			defaultVal: "new Date()",
-		};
+		toRet.decorator = "@Fields.updatedAt";
 	}
 
-	return {
-		decorator: "@Fields.date",
-		type: "Date",
-	};
+	if (udtName === "date") {
+		toRet.decorator = "@Fields.dateOnly";
+	}
+
+	return toRet;
 };
 
 const enumProcessor: DataTypeProcessorFunction = ({
