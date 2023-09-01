@@ -15,37 +15,49 @@ function pCancel(cancelText = "Operation cancelled.") {
 	process.exit(1);
 }
 
-async function main() {
-	const { output, tableProps, customDecorators, tmpJyc, ...args } = await yargs(
-		process.argv.slice(2)
-	)
-		.options({
-			"connection-string": {
-				default: process.env["DATABASE_URL"],
-				description:
-					"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
-			},
-			output: {
-				default: process.env["OUTPUT"] ?? "./src/shared",
-			},
-			"table-props": {
-				default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
-				description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
-			},
-			"tmp-jyc": {
-				type: "boolean",
-				hidden: true,
-				default: process.env["TMP_JYC"] === "true",
-			},
-			"custom-decorators": {
-				type: "string",
-				hidden: true,
-				default: process.env["CUSTOM_DECORATORS"] ?? "{}",
-				description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@MyFields.string#./MyFields"}', it will be JSON parsed!
+const options = {
+	"connection-string": {
+		default: process.env["DATABASE_URL"],
+		description:
+			"Your PostgreSQL database connection string. Only PostgreSQL databases are supported.",
+	},
+	output: {
+		default: process.env["OUTPUT"] ?? "./src/shared",
+	},
+	"table-props": {
+		default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
+		description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
+	},
+	"tmp-jyc": {
+		type: "boolean",
+		hidden: true,
+		default: process.env["TMP_JYC"] === "true",
+	},
+	"custom-decorators": {
+		type: "string",
+		hidden: true,
+		default: process.env["CUSTOM_DECORATORS"] ?? "{}",
+		description: `Example CUSTOM_DECORATORS = '{"@Fields.string":"@MyFields.string#./MyFields"}', it will be JSON parsed!
 Like this, '@Fields.string' will be replaced by '@MyFields.string' and 'MyFields' is imported from './MyFields'
 You can use it to replace the default decorators by your own, extending Remult ones.`,
-			},
-		})
+	},
+	"default-order-by": {
+		type: "array",
+		array: true,
+		default: process.env["DEFAULT_ORDER_BY"]?.split(", ") ?? ["order", "name"],
+	},
+} as const;
+
+async function main() {
+	const {
+		output,
+		tableProps,
+		customDecorators,
+		tmpJyc,
+		defaultOrderBy,
+		...args
+	} = await yargs(process.argv.slice(2))
+		.options(options)
 		.example([
 			["remult-cli --connectionString postgres://user:pass@host:port/db-name"],
 		]).argv;
@@ -93,6 +105,7 @@ You can use it to replace the default decorators by your own, extending Remult o
 		args.connectionString,
 		output,
 		tableProps,
+		defaultOrderBy,
 		customDecoratorsJSON,
 		tmpJyc
 	);

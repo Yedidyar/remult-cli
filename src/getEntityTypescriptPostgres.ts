@@ -100,6 +100,7 @@ export async function getEntitiesTypescriptPostgres(
 	connectionString: string,
 	outputDir: string,
 	tableProps: string,
+	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
@@ -160,7 +161,8 @@ export async function getEntitiesTypescriptPostgres(
 								table,
 								tableProps,
 								customDecorators,
-								report
+								report,
+								orderBy
 							);
 						writeFileSync(
 							`${entities_path}${table.className}.ts`,
@@ -205,7 +207,8 @@ async function getEntityTypescriptPostgres(
 	table: DbTable,
 	tableProps: string,
 	customDecorators: Record<string, string>,
-	report: CliReport
+	report: CliReport,
+	orderBy?: (string | number)[]
 ) {
 	const provider = await createPostgresDataProvider({
 		connectionString,
@@ -260,10 +263,7 @@ async function getEntityTypescriptPostgres(
 		// TODO: extract this logic from the process column
 		await handleEnums(enums, dataType, provider, udtName);
 
-		if (
-			!defaultOrderBy &&
-			["order", "name", "nom", "username"].includes(columnName)
-		) {
+		if (!defaultOrderBy && orderBy?.includes(columnName)) {
 			defaultOrderBy = columnName;
 		}
 
@@ -307,11 +307,16 @@ async function getEntityTypescriptPostgres(
 	return { entityString, enumsStrings };
 }
 
-function addLineIfNeeded(array: string[], format: (item: string) => string) {
-	if (array.length > 0) {
-		return `\n${array.map(format).join("\n")}`;
+function addLineIfNeeded(array: string[], format?: (item: string) => string) {
+	if (array.length === 0) {
+		return ``;
 	}
-	return ``;
+
+	if (!format) {
+		return `\n${array.join("\n")}`;
+	}
+
+	return `\n${array.map(format).join("\n")}`;
 }
 
 const handleForeignKeyCol = (
@@ -376,7 +381,7 @@ const generateEntityString = (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
 		}Fields } from 'remult'` +
-		`${addLineIfNeeded([...new Set(additionnalImports)], (c) => c)}` +
+		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,
 			(c) => `import { ${c} } from './${c}'`
@@ -386,7 +391,7 @@ const generateEntityString = (
 			(c) => `import { ${c} } from '../enums/${c}'`
 		)}
 
-@Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
+@Entity('${table.key}', {\n\t${props.join(",\n\t")}\n})
 export class ${table.className} {
 ${cols.join(`\n`)}}
 `
