@@ -6,6 +6,7 @@ import {
 	getForeignKeys,
 	getTableColumnInfo,
 	getTablesInfo,
+	getUniqueInfo,
 } from "./postgres/commands.js";
 import { CliReport } from "./report.js";
 import {
@@ -232,6 +233,7 @@ async function getEntityTypescriptPostgres(
 	}
 
 	let defaultOrderBy: string | null = null;
+	const uniqueInfo = await getUniqueInfo(provider, schema);
 	for (const {
 		column_name: columnName,
 		column_default: columnDefault,
@@ -259,6 +261,17 @@ async function getEntityTypescriptPostgres(
 			provider,
 			table,
 		});
+
+		if (
+			uniqueInfo.find(
+				(u) =>
+					u.table_schema === schema &&
+					u.table_name === table.dbName &&
+					u.column_name === columnName
+			)
+		) {
+			decoratorArgsOptions.push("validate: [Validators.uniqueOnBackend]");
+		}
 
 		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
@@ -383,7 +396,7 @@ const generateEntityString = (
 	return (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
-		}Fields } from 'remult'` +
+		}Fields, Validators } from 'remult'` +
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,
