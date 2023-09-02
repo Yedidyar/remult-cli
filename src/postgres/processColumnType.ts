@@ -24,6 +24,7 @@ type DataTypeProcessorFunction = (
 	defaultVal: string;
 	decoratorArgsValueType: string;
 	decoratorArgsOptions: string[];
+	enumAdditionalName: string;
 }> | void;
 
 export const processColumnType = (
@@ -43,46 +44,6 @@ export const processColumnType = (
 		table,
 	} = input;
 
-	const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
-		decimal: intOrAutoIncrementProcessor,
-		real: intOrAutoIncrementProcessor,
-		int: intOrAutoIncrementProcessor,
-		integer: intOrAutoIncrementProcessor,
-		smallint: intOrAutoIncrementProcessor,
-		tinyint: intOrAutoIncrementProcessor,
-
-		bigint: intOrNumberProcessor,
-		float: intOrNumberProcessor,
-		numeric: intOrNumberProcessor,
-		NUMBER: intOrNumberProcessor,
-		money: intOrNumberProcessor,
-		"double precision": intOrNumberProcessor,
-
-		nchar: stringProcessor,
-		nvarchar: stringProcessor,
-		ntext: stringProcessor,
-		NVARCHAR2: stringProcessor,
-		text: stringProcessor,
-		varchar: stringProcessor,
-		VARCHAR2: stringProcessor,
-		character: stringProcessor,
-		"character varying": stringProcessor,
-
-		CHAR: charProcessor,
-		char: charProcessor,
-
-		date: dateProcessor,
-		DATE: dateProcessor,
-		datetime: dateProcessor,
-		datetime2: dateProcessor,
-		"timestamp without time zone": dateProcessor,
-
-		bit: booleanProcessor,
-		boolean: booleanProcessor,
-
-		ARRAY: arrayProcessor,
-		"USER-DEFINED": enumProcessor,
-	};
 	const field = dataTypeProcessors[dataType]?.(input);
 
 	if (!field) {
@@ -102,6 +63,7 @@ export const processColumnType = (
 		decoratorArgsOptions: field?.decoratorArgsOptions ?? [],
 		type: field?.type === undefined ? "string" : field?.type,
 		defaultVal: field?.defaultVal ?? null,
+		enumAdditionalName: field?.enumAdditionalName ?? null,
 	};
 };
 
@@ -168,22 +130,37 @@ const enumProcessor: DataTypeProcessorFunction = ({
 	};
 };
 
-const arrayProcessor: DataTypeProcessorFunction = ({
-	report,
-	table,
-	columnName,
-}) => {
-	// TODO: We can probably do better
-	report.typeCouldBeBetter.push(
-		yellow(
-			`For table ["${table.dbName}"] column ["${columnName}"] => The type is not specified.`
-		)
-	);
+const arrayProcessor: DataTypeProcessorFunction = (input) => {
+	// udtName will show "_numeric" or "_permission_enum" (USER-DEFINED)
+	const cleanUdtName = input.udtName.substring(1);
+
+	let toRet = {};
+
+	// Check regular types
+	if (dataTypeProcessors[cleanUdtName]) {
+		const field = dataTypeProcessors[cleanUdtName]?.(input);
+		toRet = { ...field };
+	} else {
+		// It means that it's a custom type
+		const field = dataTypeProcessors["USER-DEFINED"]?.({
+			...input,
+			dataType: cleanUdtName,
+		});
+		if (field) {
+			// field.decoratorArgsValueType = field.decoratorArgsValueType + "[]";
+			field.decoratorArgsValueType = "() => []";
+			field.enumAdditionalName = cleanUdtName;
+			toRet = { ...field };
+		}
+	}
 
 	return {
+		...toRet,
 		decorator: "@Fields.json",
-		type: null,
-		defaultVal: "[]",
+		// @ts-ignore
+		type: toRet.type + "[]",
+		// Because I want the type to be set
+		// defaultVal: "[]",
 	};
 };
 
@@ -214,4 +191,45 @@ const charProcessor: DataTypeProcessorFunction = ({
 	if (characterMaximumLength == 8 && columnDefault == "('00000000')") {
 		return { decorator: "@Fields.dateOnly", type: "Date" };
 	}
+};
+
+const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
+	decimal: intOrAutoIncrementProcessor,
+	real: intOrAutoIncrementProcessor,
+	int: intOrAutoIncrementProcessor,
+	integer: intOrAutoIncrementProcessor,
+	smallint: intOrAutoIncrementProcessor,
+	tinyint: intOrAutoIncrementProcessor,
+
+	bigint: intOrNumberProcessor,
+	float: intOrNumberProcessor,
+	numeric: intOrNumberProcessor,
+	NUMBER: intOrNumberProcessor,
+	money: intOrNumberProcessor,
+	"double precision": intOrNumberProcessor,
+
+	nchar: stringProcessor,
+	nvarchar: stringProcessor,
+	ntext: stringProcessor,
+	NVARCHAR2: stringProcessor,
+	text: stringProcessor,
+	varchar: stringProcessor,
+	VARCHAR2: stringProcessor,
+	character: stringProcessor,
+	"character varying": stringProcessor,
+
+	CHAR: charProcessor,
+	char: charProcessor,
+
+	date: dateProcessor,
+	DATE: dateProcessor,
+	datetime: dateProcessor,
+	datetime2: dateProcessor,
+	"timestamp without time zone": dateProcessor,
+
+	bit: booleanProcessor,
+	boolean: booleanProcessor,
+
+	ARRAY: arrayProcessor,
+	"USER-DEFINED": enumProcessor,
 };

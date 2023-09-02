@@ -28,6 +28,12 @@ const options = {
 		default: process.env["TABLE_PROPS"] ?? "allowApiCrud: true",
 		description: `Example only authenticated, set: "allowApiCrud: (r) => r?.authenticated() ?? false"`,
 	},
+	"with-enums": {
+		default: process.env["WITH_ENUMS"]
+			? process.env["WITH_ENUMS"] === "true"
+			: true,
+		description: `Example you don't want to overwrite your enums, set: "false" (default: "true")`,
+	},
 	"tmp-jyc": {
 		type: "boolean",
 		hidden: true,
@@ -53,6 +59,7 @@ async function main() {
 		output,
 		tableProps,
 		customDecorators,
+		withEnums,
 		tmpJyc,
 		defaultOrderBy,
 		...args
@@ -107,6 +114,7 @@ async function main() {
 		tableProps,
 		defaultOrderBy,
 		customDecoratorsJSON,
+		withEnums,
 		tmpJyc
 	);
 	spinner.stop(`Generation done ${green("✓")}`);

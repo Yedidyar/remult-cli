@@ -104,6 +104,7 @@ export async function getEntitiesTypescriptPostgres(
 	tableProps: string,
 	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
+	withEnums: boolean = true,
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
 	schema = "public",
@@ -123,13 +124,19 @@ export async function getEntitiesTypescriptPostgres(
 	const tableInfo = await getTablesInfo(provider);
 	const foreignKeys = await getForeignKeys(provider);
 
-	rmSync(outputDir, { recursive: true, force: true });
-
-	mkdirSync(outputDir, { recursive: true });
 	const entities_path = `${outputDir}/entities/`;
-	mkdirSync(entities_path);
 	const enums_path = `${outputDir}/enums/`;
-	mkdirSync(enums_path);
+
+	if (withEnums) {
+		rmSync(outputDir, { recursive: true, force: true });
+		mkdirSync(outputDir, { recursive: true });
+		mkdirSync(entities_path);
+		mkdirSync(enums_path);
+	} else {
+		rmSync(entities_path, { recursive: true, force: true });
+		mkdirSync(outputDir, { recursive: true });
+		mkdirSync(entities_path);
+	}
 
 	const allTables = tableInfo.map((table) => {
 		const tableForeignKeys = foreignKeys.filter(
@@ -171,9 +178,11 @@ export async function getEntitiesTypescriptPostgres(
 							entityString
 						);
 
-						enumsStrings.forEach(({ enumName, enumString }) => {
-							writeFileSync(`${enums_path}${enumName}.ts`, enumString);
-						});
+						if (withEnums) {
+							enumsStrings.forEach(({ enumName, enumString }) => {
+								writeFileSync(`${enums_path}${enumName}.ts`, enumString);
+							});
+						}
 						tablesGenerated.push(table);
 					}
 				} catch (error) {
@@ -249,6 +258,7 @@ async function getEntityTypescriptPostgres(
 			type,
 			decoratorArgsValueType,
 			decoratorArgsOptions,
+			enumAdditionalName,
 		} = processColumnType({
 			columnName,
 			columnDefault,
@@ -276,6 +286,9 @@ async function getEntityTypescriptPostgres(
 		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
 		// TODO: extract this logic from the process column
+		if (enumAdditionalName) {
+			await handleEnums(enums, "USER-DEFINED", provider, enumAdditionalName);
+		}
 		await handleEnums(enums, dataType, provider, udtName);
 
 		if (!defaultOrderBy && orderBy?.includes(columnName)) {
