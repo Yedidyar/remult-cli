@@ -1,7 +1,7 @@
 import { SqlDatabase } from "remult";
 import { DbTable } from "../DbTable.js";
 import { CliReport } from "../report.js";
-import { toPascalCase } from "../utils/case.js";
+import { kababToConstantCase, toPascalCase } from "../utils/case.js";
 import { yellow } from "kleur/colors";
 
 interface ColumnInfo {
@@ -17,7 +17,7 @@ type DataTypeProcessorFunction = (
 	input: ColumnInfo & {
 		report: CliReport;
 		table: DbTable;
-	}
+	},
 ) => Partial<{
 	type: string | null;
 	decorator: string;
@@ -32,7 +32,7 @@ export const processColumnType = (
 		enums: Record<string, string[]>;
 		provider: SqlDatabase;
 		table: DbTable;
-	}
+	},
 ) => {
 	const {
 		characterMaximumLength,
@@ -156,14 +156,18 @@ const enumProcessor: DataTypeProcessorFunction = ({
 	columnDefault,
 	udtName,
 }) => {
+	console.log("\n");
+	console.log(columnDefault);
+	const enumDefault = columnDefault?.split("'")[1];
+
 	return {
 		decorator: `@Field`,
 		decoratorArgsValueType: `() => ${toPascalCase(udtName)}`,
 		decoratorArgsOptions: ["inputType: 'selectEnum'"],
 		type: columnDefault === null ? toPascalCase(udtName) : null,
 		defaultVal:
-			columnDefault !== null
-				? toPascalCase(udtName) + "." + columnDefault.split("'")[1]
+			columnDefault !== null && enumDefault
+				? `${toPascalCase(udtName)}.${kababToConstantCase(enumDefault)}`
 				: undefined,
 	};
 };
@@ -176,8 +180,8 @@ const arrayProcessor: DataTypeProcessorFunction = ({
 	// TODO: We can probably do better
 	report.typeCouldBeBetter.push(
 		yellow(
-			`For table ["${table.dbName}"] column ["${columnName}"] => The type is not specified.`
-		)
+			`For table ["${table.dbName}"] column ["${columnName}"] => The type is not specified.`,
+		),
 	);
 
 	return {

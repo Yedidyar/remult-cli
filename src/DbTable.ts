@@ -1,5 +1,6 @@
 import type { ForeignKey } from "./postgres/commands.js";
-import { toCamelCase, toPascalCase } from "./utils/case.js";
+import { toPascalCase } from "./utils/case.js";
+import pluralize from "pluralize";
 
 export interface DbTableForeignKey {
 	columnName: string;
@@ -19,7 +20,7 @@ export class DbTable {
 		schema: string,
 		foreignKeys: ForeignKey[],
 		// TODO: remove it when @jycouet finish with that
-		tmp_jyc = false
+		tmp_jyc = false,
 	) {
 		this.schema = schema;
 		this.dbName = dbName;
@@ -33,18 +34,13 @@ export class DbTable {
 						: toPascalCase(foreign_table_name),
 					isSelfReferenced: foreign_table_name === dbName,
 				};
-			}
+			},
 		);
 
 		this.className = tmp_jyc
 			? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
 			: toPascalCase(dbName);
 
-		this.key = toCamelCase(this.className) + "s";
-
-		// TODO: kinda hacky provide a custom mapping?
-		if (this.key.endsWith("ys")) {
-			this.key = this.key.slice(0, -2) + "ies";
-		}
+		this.key = pluralize.plural(this.className);
 	}
 }

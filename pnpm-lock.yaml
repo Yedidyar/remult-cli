@@ -16,6 +16,9 @@ dependencies:
   pg:
     specifier: ^8.11.3
     version: 8.11.3
+  pluralize:
+    specifier: ^8.0.0
+    version: 8.0.0
   remult:
     specifier: ^0.22.6
     version: 0.22.6
@@ -24,6 +27,9 @@ dependencies:
     version: 17.7.2
 
 devDependencies:
+  '@types/pluralize':
+    specifier: ^0.0.30
+    version: 0.0.30
   '@types/yargs':
     specifier: ^17.0.24
     version: 17.0.24
@@ -637,6 +643,10 @@ packages:
   /@types/normalize-package-data@2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
     dev: false
+
+  /@types/pluralize@0.0.30:
+    resolution: {integrity: sha512-kVww6xZrW/db5BR9OqiT71J9huRdQ+z/r+LbDuT7/EK50mCmj5FoaIARnVv0rvjUS/YpDox0cDU9lpQT011VBA==}
+    dev: true
 
   /@types/semver@7.5.1:
     resolution: {integrity: sha512-cJRQXpObxfNKkFAZbJl2yjWtJCqELQIdShsogr1d2MilP8dKD9TE/nEKHkJgUNHdGKCQaf9HbIynuV2csLGVLg==}
@@ -2400,6 +2410,11 @@ packages:
       mlly: 1.4.1
       pathe: 1.1.1
     dev: true
+
+  /pluralize@8.0.0:
+    resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
+    engines: {node: '>=4'}
+    dev: false
 
   /postcss@8.4.28:
     resolution: {integrity: sha512-Z7V5j0cq8oEKyejIKfpD8b4eBy9cwW2JWPk0+fB1HOAMsfHbnAXLLS+PfVWlzMSLQaWttKDt607I0XHmpE67Vw==}
