@@ -158,11 +158,11 @@ const arrayProcessor: DataTypeProcessorFunction = (input) => {
 	return {
 		...toRet,
 		decorator: "@Fields.json",
-		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-		// @ts-ignore
-		type: toRet.type + "[]",
-		// Because I want the type to be set
-		// defaultVal: "[]",
+
+		type:
+			"type" in toRet && typeof toRet.type === "string"
+				? toRet.type + "[]"
+				: undefined,
 	};
 };
 

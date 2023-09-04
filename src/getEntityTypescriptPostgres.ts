@@ -1,8 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { createPostgresDataProvider } from "remult/postgres";
 import { DbTable, DbTableForeignKey } from "./DbTable.js";
 import {
-	TableInfo,
 	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
@@ -100,7 +98,7 @@ export function buildColumn({
 }
 
 export async function getEntitiesTypescriptPostgres(
-	connectionString: string,
+	provider: SqlDatabase,
 	outputDir: string,
 	tableProps: string,
 	orderBy?: (string | number)[],
@@ -118,18 +116,7 @@ export async function getEntitiesTypescriptPostgres(
 ) {
 	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
-	let provider: SqlDatabase | null = null;
-	let tableInfo: TableInfo[] = [];
-	try {
-		provider = await createPostgresDataProvider({
-			connectionString,
-		});
-		tableInfo = await getTablesInfo(provider);
-	} catch (error) {
-		throw new Error(
-			"Could not connect to the database, check your connectionString",
-		);
-	}
+	const tableInfo = await getTablesInfo(provider);
 
 	if (tableInfo.length === 0) {
 		throw new Error("No table found in the database");
@@ -183,7 +170,7 @@ export async function getEntitiesTypescriptPostgres(
 
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
-								connectionString,
+								provider,
 								schema,
 								table,
 								tableProps,
@@ -231,7 +218,7 @@ export const entities = [
 }
 
 async function getEntityTypescriptPostgres(
-	connectionString: string,
+	provider: SqlDatabase,
 	schema: string,
 	table: DbTable,
 	tableProps: string,
@@ -239,10 +226,6 @@ async function getEntityTypescriptPostgres(
 	report: CliReport,
 	orderBy?: (string | number)[],
 ) {
-	const provider = await createPostgresDataProvider({
-		connectionString,
-	});
-
 	const enums: Record<string, string[]> = {};
 	const additionnalImports: string[] = [];
 
@@ -258,7 +241,7 @@ async function getEntityTypescriptPostgres(
 			props.push(`dbName: '${table.dbName}'`);
 		}
 	}
-
+	let usesValidators = false;
 	let defaultOrderBy: string | null = null;
 	const uniqueInfo = await getUniqueInfo(provider, schema);
 	for (const {
@@ -295,9 +278,10 @@ async function getEntityTypescriptPostgres(
 				(u) =>
 					u.table_schema === schema &&
 					u.table_name === table.dbName &&
-					u.column_name === columnName
+					u.column_name === columnName,
 			)
 		) {
+			usesValidators = true;
 			decoratorArgsOptions.push("validate: [Validators.uniqueOnBackend]");
 		}
 
@@ -347,6 +331,7 @@ async function getEntityTypescriptPostgres(
 		props,
 		cols,
 		additionnalImports,
+		usesValidators,
 	);
 
 	const enumsStrings = generateEnumsStrings(enums);
@@ -411,6 +396,7 @@ const generateEntityString = (
 	props: string[],
 	cols: string[],
 	additionnalImports: string[],
+	usesValidators: boolean,
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
@@ -427,7 +413,7 @@ const generateEntityString = (
 	return (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
-		}Fields, Validators } from 'remult'` +
+		}Fields${usesValidators ? ", Validators" : ""} } from 'remult'` +
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,

@@ -27,7 +27,11 @@ export const logReport = (
   ${report.sAdded.join("\n  ")}`,
 			);
 		}
-	} else if (reportKind === "numbers") {
+
+		return;
+	}
+
+	if (reportKind === "numbers") {
 		if (report.typeCouldBeBetter.length > 0) {
 			p.log.info(
 				`${green(`Type need to be manually typed`)}: ${yellow(
@@ -42,5 +46,9 @@ export const logReport = (
 				)}`,
 			);
 		}
+		return;
 	}
+
+	// make sure all reportKinds was exhausted
+	reportKind satisfies never;
 };

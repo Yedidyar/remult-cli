@@ -7,6 +7,8 @@ import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js"
 import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
 import { green } from "kleur/colors";
+import { SqlDatabase } from "remult";
+import { createPostgresDataProvider } from "remult/postgres";
 
 dotenv.config();
 
@@ -71,31 +73,7 @@ async function main() {
 
 	p.intro("🎉 Welcome to remult-cli!");
 
-	if (!args.connectionString) {
-		const answer = await p.group(
-			{
-				connectionString: async () =>
-					p.text({
-						message: `What's your connectionString?`,
-						placeholder:
-							"  (type it here or restart with --connectionString or a .env file containing DATABASE_URL)",
-						validate: (value) => {
-							if (value === "") {
-								return "Please enter something";
-							}
-
-							if (!value.startsWith("postgres")) {
-								return "Please enter a valid connexion string like: postgres://user:pass@host:port/db-name";
-							}
-						},
-					}),
-			},
-			{
-				onCancel: () => pCancel(),
-			},
-		);
-		args.connectionString = answer.connectionString;
-	}
+	args.connectionString ??= await getConnectionStringFromPrompt();
 
 	let customDecoratorsJSON = {};
 	try {
@@ -108,9 +86,21 @@ async function main() {
 
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
+
+	let provider: SqlDatabase | null = null;
+	try {
+		provider = await createPostgresDataProvider({
+			connectionString: args.connectionString,
+		});
+	} catch (error) {
+		throw new Error(
+			"Could not connect to the database, check your connectionString",
+		);
+	}
+
 	try {
 		const report = await getEntitiesTypescriptPostgres(
-			args.connectionString,
+			provider,
 			output,
 			tableProps,
 			defaultOrderBy,
@@ -133,3 +123,29 @@ async function main() {
 }
 
 main().catch(console.error);
+
+async function getConnectionStringFromPrompt() {
+	const answer = await p.group(
+		{
+			connectionString: () =>
+				p.text({
+					message: `What's your connectionString?`,
+					placeholder:
+						"  (type it here or restart with --connectionString or a .env file containing DATABASE_URL)",
+					validate: (value) => {
+						if (value === "") {
+							return "Please enter something";
+						}
+
+						if (!value.startsWith("postgres")) {
+							return "Please enter a valid connexion string like: postgres://user:pass@host:port/db-name";
+						}
+					},
+				}),
+		},
+		{
+			onCancel: () => pCancel(),
+		},
+	);
+	return answer.connectionString;
+}

@@ -8,6 +8,7 @@
 	"rules": {
 		"no-unused-vars": "off",
 		"@typescript-eslint/no-unused-vars": "error",
-		"sonarjs/no-nested-template-literals": "off"
+		"sonarjs/no-nested-template-literals": "off",
+		"sonarjs/cognitive-complexity": ["error", 20]
 	}
 }
