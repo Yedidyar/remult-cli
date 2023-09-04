@@ -1,3 +1,13 @@
+import {
+	gray,
+	green,
+	italic,
+	yellow,
+	cyan,
+	bold,
+	strikethrough,
+	red,
+} from "kleur/colors";
 import type { ForeignKey } from "./postgres/commands.js";
 import { toCamelCase, toPascalCase } from "./utils/case.js";
 import pluralize from "pluralize";
@@ -42,5 +52,26 @@ export class DbTable {
 			: toPascalCase(dbName);
 
 		this.key = pluralize.plural(toCamelCase(this.className));
+	}
+
+	checkNamingConvention() {
+		if (this.key === toCamelCase(this.className)) {
+			const ccClassName = toCamelCase(this.className);
+			const newKey = `${this.key}s`;
+
+			const str =
+				`Your table "${green(this.dbName)}"` +
+				` generates` +
+				` ${cyan(
+					`{ className: "${yellow(this.className)}"` +
+						` ${italic(gray(`(camelCase: "${yellow(ccClassName)}")`))},` +
+						` key: "${red(strikethrough(this.key))}${green(bold(newKey))}" }`,
+				)}.`;
+
+			this.key = newKey;
+
+			return str;
+		}
+		return null;
 	}
 }

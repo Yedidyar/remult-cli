@@ -114,7 +114,7 @@ export async function getEntitiesTypescriptPostgres(
 	],
 	include: string[] = [],
 ) {
-	const report: CliReport = { typeCouldBeBetter: [] };
+	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
 	let provider: SqlDatabase | null = null;
 	let tableInfo: TableInfo[] = [];
@@ -168,6 +168,11 @@ export async function getEntitiesTypescriptPostgres(
 						!exclude.includes(table.dbName) &&
 						(include.length === 0 || include.includes(table.dbName))
 					) {
+						const str = table.checkNamingConvention();
+						if (str) {
+							report.sAdded.push(str);
+						}
+
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
 								connectionString,
