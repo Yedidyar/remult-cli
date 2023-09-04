@@ -2,7 +2,6 @@ import { SqlDatabase } from "remult";
 import { DbTable } from "../DbTable.js";
 import { CliReport } from "../report.js";
 import { kababToConstantCase, toPascalCase } from "../utils/case.js";
-import { yellow } from "kleur/colors";
 
 interface ColumnInfo {
 	columnName: string;
@@ -159,6 +158,7 @@ const arrayProcessor: DataTypeProcessorFunction = (input) => {
 	return {
 		...toRet,
 		decorator: "@Fields.json",
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 		// @ts-ignore
 		type: toRet.type + "[]",
 		// Because I want the type to be set
