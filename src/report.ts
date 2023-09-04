@@ -18,13 +18,13 @@ export const logReport = (
 		if (report.typeCouldBeBetter.length > 0) {
 			p.log.info(
 				`${green(`Type need to be manually typed`)}:
-		${yellow(report.typeCouldBeBetter.join("\n  "))}`,
+  ${yellow(report.typeCouldBeBetter.join("\n  "))}`,
 			);
 		}
 		if (report.sAdded.length > 0) {
 			p.log.info(
 				`${green(`We added an "s" to the key to avoid collision on`)}:
-				${report.sAdded.join("\n  ")}`,
+  ${report.sAdded.join("\n  ")}`,
 			);
 		}
 	} else if (reportKind === "numbers") {
