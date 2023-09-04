@@ -2,6 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { createPostgresDataProvider } from "remult/postgres";
 import { DbTable, DbTableForeignKey } from "./DbTable.js";
 import {
+	TableInfo,
 	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
@@ -113,15 +114,27 @@ export async function getEntitiesTypescriptPostgres(
 		"pg_stat_statements_info",
 		"_prisma_migrations",
 	],
-	include: string[] = []
+	include: string[] = [],
 ) {
-	const report = { noTableMatchingforeignKey: [], typeCouldBeBetter: [] };
+	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
-	const provider = await createPostgresDataProvider({
-		connectionString,
-	});
+	let provider: SqlDatabase | null = null;
+	let tableInfo: TableInfo[] = [];
+	try {
+		provider = await createPostgresDataProvider({
+			connectionString,
+		});
+		tableInfo = await getTablesInfo(provider);
+	} catch (error) {
+		throw new Error(
+			"Could not connect to the database, check your connectionString",
+		);
+	}
 
-	const tableInfo = await getTablesInfo(provider);
+	if (tableInfo.length === 0) {
+		throw new Error("No table found in the database");
+	}
+
 	const foreignKeys = await getForeignKeys(provider);
 
 	const entities_path = `${outputDir}/entities/`;
@@ -140,14 +153,14 @@ export async function getEntitiesTypescriptPostgres(
 
 	const allTables = tableInfo.map((table) => {
 		const tableForeignKeys = foreignKeys.filter(
-			({ table_name }) => table.table_name === table_name
+			({ table_name }) => table.table_name === table_name,
 		);
 
 		return new DbTable(
 			table.table_name,
 			table.table_schema,
 			tableForeignKeys,
-			tmp_jyc
+			tmp_jyc,
 		);
 	});
 
@@ -163,6 +176,11 @@ export async function getEntitiesTypescriptPostgres(
 						!exclude.includes(table.dbName) &&
 						(include.length === 0 || include.includes(table.dbName))
 					) {
+						const str = table.checkNamingConvention();
+						if (str) {
+							report.sAdded.push(str);
+						}
+
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
 								connectionString,
@@ -171,11 +189,11 @@ export async function getEntitiesTypescriptPostgres(
 								tableProps,
 								customDecorators,
 								report,
-								orderBy
+								orderBy,
 							);
 						writeFileSync(
 							`${entities_path}${table.className}.ts`,
-							entityString
+							entityString,
 						);
 
 						if (withEnums) {
@@ -188,7 +206,7 @@ export async function getEntitiesTypescriptPostgres(
 				} catch (error) {
 					console.error(error);
 				}
-			})
+			}),
 	);
 
 	const sortedTables = tablesGenerated
@@ -206,7 +224,7 @@ export async function getEntitiesTypescriptPostgres(
 
 export const entities = [
 	${sortedTables.map((c) => c.className).join(",\n  ")}
-]`
+]`,
 	);
 
 	return report;
@@ -219,7 +237,7 @@ async function getEntityTypescriptPostgres(
 	tableProps: string,
 	customDecorators: Record<string, string>,
 	report: CliReport,
-	orderBy?: (string | number)[]
+	orderBy?: (string | number)[],
 ) {
 	const provider = await createPostgresDataProvider({
 		connectionString,
@@ -296,7 +314,7 @@ async function getEntityTypescriptPostgres(
 		}
 
 		const foreignKey = table.foreignKeys.find(
-			(f) => f.columnName === columnName
+			(f) => f.columnName === columnName,
 		);
 
 		if (foreignKey) {
@@ -328,7 +346,7 @@ async function getEntityTypescriptPostgres(
 		enums,
 		props,
 		cols,
-		additionnalImports
+		additionnalImports,
 	);
 
 	const enumsStrings = generateEnumsStrings(enums);
@@ -352,7 +370,7 @@ const handleForeignKeyCol = (
 	foreignKey: DbTableForeignKey,
 	columnName: string,
 	additionnalImports: string[],
-	cols: string[]
+	cols: string[],
 ) => {
 	const currentColFk = buildColumn({
 		decorator: "@Field",
@@ -379,7 +397,7 @@ const handleEnums = async (
 	enums: Record<string, string[]>,
 	dataType: string,
 	provider: SqlDatabase,
-	udtName: string
+	udtName: string,
 ) => {
 	if ("USER-DEFINED" === dataType) {
 		const enumDef = await getEnumDef(provider, udtName);
@@ -392,7 +410,7 @@ const generateEntityString = (
 	enums: Record<string, string[]>,
 	props: string[],
 	cols: string[],
-	additionnalImports: string[]
+	additionnalImports: string[],
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
@@ -400,7 +418,7 @@ const generateEntityString = (
 		...new Set(
 			table.foreignKeys
 				.filter(({ isSelfReferenced }) => !isSelfReferenced)
-				.map(({ foreignClassName }) => foreignClassName)
+				.map(({ foreignClassName }) => foreignClassName),
 		),
 	];
 
@@ -413,11 +431,11 @@ const generateEntityString = (
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,
-			(c) => `import { ${c} } from './${c}'`
+			(c) => `import { ${c} } from './${c}'`,
 		)}` +
 		`${addLineIfNeeded(
 			enumsKeys,
-			(c) => `import { ${c} } from '../enums/${c}'`
+			(c) => `import { ${c} } from '../enums/${c}'`,
 		)}
 
 @Entity('${table.key}', {\n\t${props.join(",\n\t")}\n})
@@ -443,8 +461,8 @@ export class ${enumName} {
 		?.map(
 			(e) =>
 				`static ${kababToConstantCase(
-					e
-				)} = new ${enumName}('${e}', '${toTitleCase(e)}')`
+					e,
+				)} = new ${enumName}('${e}', '${toTitleCase(e)}')`,
 		)
 		.join("\n  ")}
 

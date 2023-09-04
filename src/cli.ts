@@ -92,7 +92,7 @@ async function main() {
 			},
 			{
 				onCancel: () => pCancel(),
-			}
+			},
 		);
 		args.connectionString = answer.connectionString;
 	}
@@ -108,18 +108,24 @@ async function main() {
 
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
-	const report = await getEntitiesTypescriptPostgres(
-		args.connectionString,
-		output,
-		tableProps,
-		defaultOrderBy,
-		customDecoratorsJSON,
-		withEnums,
-		tmpJyc
-	);
-	spinner.stop(`Generation done ${green("✓")}`);
+	try {
+		const report = await getEntitiesTypescriptPostgres(
+			args.connectionString,
+			output,
+			tableProps,
+			defaultOrderBy,
+			customDecoratorsJSON,
+			withEnums,
+			tmpJyc,
+		);
+		spinner.stop(`Generation done ${green("✓")}`);
 
-	logReport("full", report);
+		logReport("full", report);
+	} catch (error: unknown) {
+		if (error instanceof Error) {
+			pCancel(error.message);
+		}
+	}
 
 	p.outro(`🎉 Everything is ready!`);
 
