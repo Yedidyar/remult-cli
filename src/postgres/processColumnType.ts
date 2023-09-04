@@ -156,8 +156,6 @@ const enumProcessor: DataTypeProcessorFunction = ({
 	columnDefault,
 	udtName,
 }) => {
-	console.log("\n");
-	console.log(columnDefault);
 	const enumDefault = columnDefault?.split("'")[1];
 
 	return {

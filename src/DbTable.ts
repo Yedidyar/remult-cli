@@ -1,5 +1,5 @@
 import type { ForeignKey } from "./postgres/commands.js";
-import { toPascalCase } from "./utils/case.js";
+import { toCamelCase, toPascalCase } from "./utils/case.js";
 import pluralize from "pluralize";
 
 export interface DbTableForeignKey {
@@ -41,6 +41,6 @@ export class DbTable {
 			? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
 			: toPascalCase(dbName);
 
-		this.key = pluralize.plural(this.className);
+		this.key = pluralize.plural(toCamelCase(this.className));
 	}
 }
