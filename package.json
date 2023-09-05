@@ -34,7 +34,7 @@
 	},
 	"devDependencies": {
 		"@types/yargs": "^17.0.24",
-		"@typescript-eslint/eslint-plugin": "^6.5.0",
+		"@typescript-eslint/eslint-plugin": "^6.6.0",
 		"@typescript-eslint/parser": "^6.6.0",
 		"eslint": "^8.48.0",
 		"eslint-plugin-sonarjs": "^0.21.0",
