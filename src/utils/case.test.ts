@@ -84,4 +84,10 @@ describe("#unit-test kababToConstantCase", () => {
 	test("from ALL_CAPS", () => {
 		expect(kababToConstantCase("ALL_DAY")).toBe("ALL_DAY");
 	});
+
+	test("from camelCase space PascalCase", () => {
+		expect(kababToConstantCase("camelCase PascalCase")).toBe(
+			"CAMEL_CASE_PASCAL_CASE",
+		);
+	});
 });

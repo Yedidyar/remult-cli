@@ -22,7 +22,7 @@ export const toTitleCase = (str: string) => {
 	// Capitalize the first letter of each word and join them back
 	const words = titleCaseString.split(" ");
 	const titleCaseWords = words.map(
-		(word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+		(word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
 	);
 
 	return titleCaseWords.join(" ");
@@ -30,7 +30,9 @@ export const toTitleCase = (str: string) => {
 
 export const kababToConstantCase = (str: string) => {
 	return str
-		.replace(/([a-z\d])([A-Z])/g, "$1_$2")
-		.toUpperCase()
-		.replace(/-/g, "_");
+		.replace(/ /g, "-")
+		.replace(/([a-z\d])([A-Z])/g, "$1-$2")
+		.toLowerCase()
+		.replace(/-/g, "_")
+		.toUpperCase();
 };

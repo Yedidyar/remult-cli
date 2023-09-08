@@ -61,6 +61,35 @@ export const getTableColumnInfo = async (
 	return tablesColumnInfo.rows;
 };
 
+export const getUniqueInfo = async (
+	sqlDatabase: SqlDatabase,
+	schema: string
+): Promise<
+	{
+		table_schema: string;
+		table_name: string;
+		column_name: string;
+	}[]
+> => {
+	const command = sqlDatabase.createCommand();
+	const tablesColumnInfo = await command.execute(
+		`SELECT table_schema, table_name, column_name
+		FROM information_schema.table_constraints AS c
+			 JOIN information_schema.constraint_column_usage AS cc
+					USING (table_schema, table_name, constraint_name)
+		WHERE c.constraint_type = 'UNIQUE' ` +
+			`AND table_schema = ${command.addParameterAndReturnSqlToken(schema)};`
+	);
+
+	return tablesColumnInfo.rows.map((c) => {
+		return {
+			table_schema: c.table_schema,
+			table_name: c.table_name,
+			column_name: c.column_name,
+		};
+	});
+};
+
 export const getForeignKeys = async (
 	sqlDatabase: SqlDatabase
 ): Promise<ForeignKey[]> => {

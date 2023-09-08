@@ -3,28 +3,52 @@ import * as p from "@clack/prompts";
 
 export interface CliReport {
 	typeCouldBeBetter: string[];
+	sAdded: string[];
 }
 
 export const logReport = (
 	reportKind: "no" | "numbers" | "full",
-	report: CliReport
+	report: CliReport,
 ) => {
 	if (reportKind === "no") {
 		return;
 	}
 
 	if (reportKind === "full") {
-		// No table matching found
+		if (report.typeCouldBeBetter.length > 0) {
+			p.log.info(
+				`${green(`Type need to be manually typed`)}:
+  ${yellow(report.typeCouldBeBetter.join("\n  "))}`,
+			);
+		}
+		if (report.sAdded.length > 0) {
+			p.log.info(
+				`${green(`We added an "s" to the key to avoid collision on`)}:
+  ${report.sAdded.join("\n  ")}`,
+			);
+		}
 
-		p.log.info(
-			`${green(`Type need to be manually typed`)}:
-  ${yellow(report.typeCouldBeBetter.join("\n  "))}`
-		);
-	} else if (reportKind === "numbers") {
-		p.log.info(
-			`${green(`Type need to be manually typed`)}: ${yellow(
-				report.typeCouldBeBetter.length
-			)}`
-		);
+		return;
 	}
+
+	if (reportKind === "numbers") {
+		if (report.typeCouldBeBetter.length > 0) {
+			p.log.info(
+				`${green(`Type need to be manually typed`)}: ${yellow(
+					report.typeCouldBeBetter.length,
+				)}`,
+			);
+		}
+		if (report.sAdded.length > 0) {
+			p.log.info(
+				`${green(`We added an "s" to the key to avoid collision on`)}: ${yellow(
+					report.sAdded.length,
+				)}`,
+			);
+		}
+		return;
+	}
+
+	// make sure all reportKinds was exhausted
+	reportKind satisfies never;
 };
