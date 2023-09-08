@@ -1,12 +1,11 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { createPostgresDataProvider } from "remult/postgres";
 import { DbTable, DbTableForeignKey } from "./DbTable.js";
 import {
-	TableInfo,
 	getEnumDef,
 	getForeignKeys,
 	getTableColumnInfo,
 	getTablesInfo,
+	getUniqueInfo,
 } from "./postgres/commands.js";
 import { CliReport } from "./report.js";
 import {
@@ -99,11 +98,12 @@ export function buildColumn({
 }
 
 export async function getEntitiesTypescriptPostgres(
-	connectionString: string,
+	provider: SqlDatabase,
 	outputDir: string,
 	tableProps: string,
 	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
+	withEnums: boolean = true,
 	// TODO: remove it when @jycouet finish with that
 	tmp_jyc = false,
 	schema = "public",
@@ -116,18 +116,7 @@ export async function getEntitiesTypescriptPostgres(
 ) {
 	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
-	let provider: SqlDatabase | null = null;
-	let tableInfo: TableInfo[] = [];
-	try {
-		provider = await createPostgresDataProvider({
-			connectionString,
-		});
-		tableInfo = await getTablesInfo(provider);
-	} catch (error) {
-		throw new Error(
-			"Could not connect to the database, check your connectionString",
-		);
-	}
+	const tableInfo = await getTablesInfo(provider);
 
 	if (tableInfo.length === 0) {
 		throw new Error("No table found in the database");
@@ -135,13 +124,19 @@ export async function getEntitiesTypescriptPostgres(
 
 	const foreignKeys = await getForeignKeys(provider);
 
-	rmSync(outputDir, { recursive: true, force: true });
-
-	mkdirSync(outputDir, { recursive: true });
 	const entities_path = `${outputDir}/entities/`;
-	mkdirSync(entities_path);
 	const enums_path = `${outputDir}/enums/`;
-	mkdirSync(enums_path);
+
+	if (withEnums) {
+		rmSync(outputDir, { recursive: true, force: true });
+		mkdirSync(outputDir, { recursive: true });
+		mkdirSync(entities_path);
+		mkdirSync(enums_path);
+	} else {
+		rmSync(entities_path, { recursive: true, force: true });
+		mkdirSync(outputDir, { recursive: true });
+		mkdirSync(entities_path);
+	}
 
 	const allTables = tableInfo.map((table) => {
 		const tableForeignKeys = foreignKeys.filter(
@@ -175,7 +170,7 @@ export async function getEntitiesTypescriptPostgres(
 
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
-								connectionString,
+								provider,
 								schema,
 								table,
 								tableProps,
@@ -188,9 +183,11 @@ export async function getEntitiesTypescriptPostgres(
 							entityString,
 						);
 
-						enumsStrings.forEach(({ enumName, enumString }) => {
-							writeFileSync(`${enums_path}${enumName}.ts`, enumString);
-						});
+						if (withEnums) {
+							enumsStrings.forEach(({ enumName, enumString }) => {
+								writeFileSync(`${enums_path}${enumName}.ts`, enumString);
+							});
+						}
 						tablesGenerated.push(table);
 					}
 				} catch (error) {
@@ -221,7 +218,7 @@ export const entities = [
 }
 
 async function getEntityTypescriptPostgres(
-	connectionString: string,
+	provider: SqlDatabase,
 	schema: string,
 	table: DbTable,
 	tableProps: string,
@@ -229,10 +226,6 @@ async function getEntityTypescriptPostgres(
 	report: CliReport,
 	orderBy?: (string | number)[],
 ) {
-	const provider = await createPostgresDataProvider({
-		connectionString,
-	});
-
 	const enums: Record<string, string[]> = {};
 	const additionnalImports: string[] = [];
 
@@ -248,8 +241,9 @@ async function getEntityTypescriptPostgres(
 			props.push(`dbName: '${table.dbName}'`);
 		}
 	}
-
+	let usesValidators = false;
 	let defaultOrderBy: string | null = null;
+	const uniqueInfo = await getUniqueInfo(provider, schema);
 	for (const {
 		column_name: columnName,
 		column_default: columnDefault,
@@ -265,6 +259,7 @@ async function getEntityTypescriptPostgres(
 			type,
 			decoratorArgsValueType,
 			decoratorArgsOptions,
+			enumAdditionalName,
 		} = processColumnType({
 			columnName,
 			columnDefault,
@@ -278,9 +273,24 @@ async function getEntityTypescriptPostgres(
 			table,
 		});
 
+		if (
+			uniqueInfo.find(
+				(u) =>
+					u.table_schema === schema &&
+					u.table_name === table.dbName &&
+					u.column_name === columnName,
+			)
+		) {
+			usesValidators = true;
+			decoratorArgsOptions.push("validate: [Validators.uniqueOnBackend]");
+		}
+
 		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
 
 		// TODO: extract this logic from the process column
+		if (enumAdditionalName) {
+			await handleEnums(enums, "USER-DEFINED", provider, enumAdditionalName);
+		}
 		await handleEnums(enums, dataType, provider, udtName);
 
 		if (!defaultOrderBy && orderBy?.includes(columnName)) {
@@ -321,6 +331,7 @@ async function getEntityTypescriptPostgres(
 		props,
 		cols,
 		additionnalImports,
+		usesValidators,
 	);
 
 	const enumsStrings = generateEnumsStrings(enums);
@@ -385,6 +396,7 @@ const generateEntityString = (
 	props: string[],
 	cols: string[],
 	additionnalImports: string[],
+	usesValidators: boolean,
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
@@ -401,7 +413,7 @@ const generateEntityString = (
 	return (
 		`import { Entity, ${
 			isContainsForeignKeys || enumsKeys.length > 0 ? "Field, " : ""
-		}Fields } from 'remult'` +
+		}Fields${usesValidators ? ", Validators" : ""} } from 'remult'` +
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
 			foreignClassNamesToImport,

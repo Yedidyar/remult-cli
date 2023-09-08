@@ -15,25 +15,40 @@ export const logReport = (
 	}
 
 	if (reportKind === "full") {
-		// No table matching found
-		p.log.info(
-			`${green(`Type need to be manually typed`)}:
+		if (report.typeCouldBeBetter.length > 0) {
+			p.log.info(
+				`${green(`Type need to be manually typed`)}:
   ${yellow(report.typeCouldBeBetter.join("\n  "))}`,
-		);
-		p.log.info(
-			`${green(`We added an "s" to the key to avoid collision on`)}:
+			);
+		}
+		if (report.sAdded.length > 0) {
+			p.log.info(
+				`${green(`We added an "s" to the key to avoid collision on`)}:
   ${report.sAdded.join("\n  ")}`,
-		);
-	} else if (reportKind === "numbers") {
-		p.log.info(
-			`${green(`Type need to be manually typed`)}: ${yellow(
-				report.typeCouldBeBetter.length,
-			)}`,
-		);
-		p.log.info(
-			`${green(`"s" added to the key to avoid collision`)}: ${yellow(
-				report.sAdded.length,
-			)}`,
-		);
+			);
+		}
+
+		return;
 	}
+
+	if (reportKind === "numbers") {
+		if (report.typeCouldBeBetter.length > 0) {
+			p.log.info(
+				`${green(`Type need to be manually typed`)}: ${yellow(
+					report.typeCouldBeBetter.length,
+				)}`,
+			);
+		}
+		if (report.sAdded.length > 0) {
+			p.log.info(
+				`${green(`We added an "s" to the key to avoid collision on`)}: ${yellow(
+					report.sAdded.length,
+				)}`,
+			);
+		}
+		return;
+	}
+
+	// make sure all reportKinds was exhausted
+	reportKind satisfies never;
 };
