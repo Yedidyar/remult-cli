@@ -358,9 +358,13 @@ const handleForeignKeyCol = (
 	cols: string[],
 ) => {
 	const currentColFk = buildColumn({
-		decorator: "@Field",
+		decorator: "@Relations.toOne",
 		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-		decoratorArgsOptions: ["lazy: true", "inputType: 'selectEntity'"],
+		decoratorArgsOptions: [
+			// No need since @Relations has lazy true by default
+			//"lazy: true",
+			"inputType: 'selectEntity'",
+		],
 		// TODO: make the columnNameTweak generic
 		columnNameTweak: columnName.replace(/Id$/, ""),
 		columnName,
@@ -424,7 +428,7 @@ const generateEntityString = (
 			(c) => `import { ${c} } from '../enums/${c}'`,
 		)}
 
-@Entity('${table.key}', {\n\t${props.join(",\n\t")}\n})
+@Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
 export class ${table.className} {
 ${cols.join(`\n`)}}
 `
