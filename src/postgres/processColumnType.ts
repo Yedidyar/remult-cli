@@ -170,13 +170,11 @@ const arrayProcessor: DataTypeProcessorFunction = (input) => {
 	};
 };
 
-const jsonProcessor: DataTypeProcessorFunction = (input) => {
-	const toRet = {
+const jsonProcessor: DataTypeProcessorFunction = () => {
+	return {
 		decorator: "@Fields.json",
 		defaultVal: "{}",
 	};
-
-	return toRet;
 };
 
 const intOrAutoIncrementProcessor: DataTypeProcessorFunction = ({
