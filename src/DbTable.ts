@@ -25,13 +25,7 @@ export class DbTable {
 	className: string;
 	foreignKeys: DbTableForeignKey[];
 
-	constructor(
-		dbName: string,
-		schema: string,
-		foreignKeys: ForeignKey[],
-		// TODO: remove it when @jycouet finish with that
-		tmp_jyc = false,
-	) {
+	constructor(dbName: string, schema: string, foreignKeys: ForeignKey[]) {
 		this.schema = schema;
 		this.dbName = dbName;
 
@@ -39,17 +33,13 @@ export class DbTable {
 			({ foreign_table_name, column_name: columnName }) => {
 				return {
 					columnName,
-					foreignClassName: tmp_jyc
-						? toPascalCase(foreign_table_name).replace(/^(.{3})/, "$1rrr")
-						: toPascalCase(foreign_table_name),
+					foreignClassName: toPascalCase(foreign_table_name),
 					isSelfReferenced: foreign_table_name === dbName,
 				};
 			},
 		);
 
-		this.className = tmp_jyc
-			? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
-			: toPascalCase(dbName);
+		this.className = toPascalCase(dbName);
 
 		this.key = pluralize.plural(toCamelCase(this.className));
 	}

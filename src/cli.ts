@@ -36,11 +36,6 @@ const options = {
 			: true,
 		description: `Example you don't want to overwrite your enums, set: "false" (default: "true")`,
 	},
-	"tmp-jyc": {
-		type: "boolean",
-		hidden: true,
-		default: process.env["TMP_JYC"] === "true",
-	},
 	"custom-decorators": {
 		type: "string",
 		hidden: true,
@@ -106,7 +101,6 @@ async function main() {
 			defaultOrderBy,
 			customDecoratorsJSON,
 			withEnums,
-			tmpJyc,
 		);
 		spinner.stop(`Generation done ${green("✓")}`);
 

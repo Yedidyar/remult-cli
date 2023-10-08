@@ -104,8 +104,6 @@ export async function getEntitiesTypescriptPostgres(
 	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
 	withEnums: boolean = true,
-	// TODO: remove it when @jycouet finish with that
-	tmp_jyc = false,
 	schema = "public",
 	exclude = [
 		"pg_stat_statements",
@@ -143,12 +141,7 @@ export async function getEntitiesTypescriptPostgres(
 			({ table_name }) => table.table_name === table_name,
 		);
 
-		return new DbTable(
-			table.table_name,
-			table.table_schema,
-			tableForeignKeys,
-			tmp_jyc,
-		);
+		return new DbTable(table.table_name, table.table_schema, tableForeignKeys);
 	});
 
 	// build the list of classes first (for foreign keys link later)
