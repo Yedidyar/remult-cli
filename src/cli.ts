@@ -58,6 +58,20 @@ You can use it to replace the default decorators by your own, extending Remult o
 			"public",
 		],
 	},
+	exclude: {
+		type: "array",
+		array: true,
+		default: process.env["EXCLUDE"]?.split(",").map((c) => c.trim()) ?? [
+			"pg_stat_statements",
+			"pg_stat_statements_info",
+			"_prisma_migrations",
+		],
+	},
+	include: {
+		type: "array",
+		array: true,
+		default: process.env["INCLUDE"]?.split(",").map((c) => c.trim()) ?? [],
+	},
 } as const;
 
 async function main() {
@@ -69,6 +83,8 @@ async function main() {
 		tmpJyc,
 		defaultOrderBy,
 		schemas,
+		exclude,
+		include,
 		...args
 	} = await yargs(process.argv.slice(2))
 		.options(options)
@@ -112,6 +128,8 @@ async function main() {
 			customDecoratorsJSON,
 			withEnums,
 			schemas,
+			exclude,
+			include,
 		);
 		spinner.stop(`Generation done ${green("✓")}`);
 

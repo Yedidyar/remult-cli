@@ -25,12 +25,13 @@ type CliColumnInfo = {
 export function buildColumn({
 	decorator,
 	decoratorArgsValueType,
+	decoratorArgsOptions = [],
 	columnNameTweak,
 	columnName,
 	isNullable,
 	type,
 	defaultVal,
-	decoratorArgsOptions = [],
+	foreignField,
 }: {
 	decorator: string;
 	decoratorArgsValueType: string;
@@ -40,16 +41,21 @@ export function buildColumn({
 	isNullable: "YES" | "NO";
 	type: string | null;
 	defaultVal: string | null;
+	foreignField?: string | null;
 }): CliColumnInfo {
-	if (
-		columnName.toLocaleLowerCase() !== columnName ||
-		columnNameTweak ||
-		columnName === "order"
-	) {
-		decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
+	if (foreignField) {
+		decoratorArgsOptions.unshift(`field: '${foreignField}'`);
+	} else {
+		if (
+			columnName.toLocaleLowerCase() !== columnName ||
+			columnNameTweak ||
+			columnName === "order"
+		) {
+			decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
+		}
 	}
 
-	if (isNullable === "YES") {
+	if (isNullable === "YES" && !foreignField) {
 		decoratorArgsOptions.push(`allowNull: true`);
 	}
 
@@ -105,12 +111,8 @@ export async function getEntitiesTypescriptPostgres(
 	customDecorators: Record<string, string> = {},
 	withEnums: boolean = true,
 	schemas: (string | number)[] = [],
-	exclude = [
-		"pg_stat_statements",
-		"pg_stat_statements_info",
-		"_prisma_migrations",
-	],
-	include: string[] = [],
+	exclude: (string | number)[] = [],
+	include: (string | number)[] = [],
 ) {
 	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
@@ -298,15 +300,6 @@ async function getEntityTypescriptPostgres(
 			defaultOrderBy = columnName;
 		}
 
-		const foreignKey = table.foreignKeys.find(
-			(f) => f.columnName === columnName,
-		);
-
-		if (foreignKey) {
-			handleForeignKeyCol(foreignKey, columnName, additionnalImports, cols);
-			continue;
-		}
-
 		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
@@ -320,6 +313,19 @@ async function getEntityTypescriptPostgres(
 			additionnalImports.push(currentCol.decorator_import);
 		}
 		cols.push(currentCol.col + `\n`);
+
+		const foreignKey = table.foreignKeys.find(
+			(f) => f.columnName === columnName,
+		);
+		if (foreignKey) {
+			handleForeignKeyCol(
+				foreignKey,
+				columnName,
+				additionnalImports,
+				cols,
+				isNullable,
+			);
+		}
 	}
 
 	if (defaultOrderBy) {
@@ -357,19 +363,19 @@ const handleForeignKeyCol = (
 	columnName: string,
 	additionnalImports: string[],
 	cols: string[],
+	isNullable: "YES" | "NO",
 ) => {
 	const columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
-	console.log(`columnName`, columnName, columnNameTweak);
 
 	const currentColFk = buildColumn({
 		decorator: "@Relations.toOne#remult",
 		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-		decoratorArgsOptions: ["inputType: 'selectEntity'"],
 		columnNameTweak,
 		columnName,
-		isNullable: "YES",
+		isNullable,
 		type: foreignKey.foreignClassName,
 		defaultVal: null,
+		foreignField: columnName,
 	});
 
 	if (currentColFk.decorator_import) {
