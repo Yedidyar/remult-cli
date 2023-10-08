@@ -50,7 +50,8 @@ export function buildColumn({
 		if (
 			columnName.toLocaleLowerCase() !== columnName ||
 			columnNameTweak ||
-			columnName === "order"
+			columnName === "order" ||
+			columnName === "from"
 		) {
 			decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
 		}
@@ -333,6 +334,7 @@ async function getEntityTypescriptPostgres(
 	}
 	let usesValidators = false;
 	let defaultOrderBy: string | null = null;
+	const columnWithId: string[] = [];
 	const uniqueInfo = await getUniqueInfo(provider, schema);
 	for (const {
 		column_name: columnName,
@@ -362,7 +364,9 @@ async function getEntityTypescriptPostgres(
 			provider,
 			table,
 		});
-
+		if (columnName.toLowerCase().includes("id")) {
+			columnWithId.push(columnName);
+		}
 		if (
 			uniqueInfo.find(
 				(u) =>
@@ -429,6 +433,10 @@ async function getEntityTypescriptPostgres(
 
 	if (defaultOrderBy) {
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
+	}
+
+	if (!columnWithId.includes("id")) {
+		props.push(`id: { ${columnWithId.map((c) => `${c}: true`).join(", ")} }`);
 	}
 
 	return {
