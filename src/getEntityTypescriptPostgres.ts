@@ -358,7 +358,7 @@ const handleForeignKeyCol = (
 	cols: string[],
 ) => {
 	const currentColFk = buildColumn({
-		decorator: "@Relations.toOne",
+		decorator: "@Relations.toOne#remult",
 		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
 		decoratorArgsOptions: [
 			// No need since @Relations has lazy true by default
