@@ -98,11 +98,15 @@ const dateProcessor: DataTypeProcessorFunction = ({
 		defaultVal: columnDefault !== null ? "new Date()" : "",
 	};
 
-	if (columnName === "createdAt" || columnName === "dateCreated") {
+	if (
+		columnName === "createdAt" ||
+		columnName === "dateCreated" ||
+		columnName === "created_at"
+	) {
 		toRet.decorator = "@Fields.createdAt";
 	}
 
-	if (columnName === "updatedAt") {
+	if (columnName === "updatedAt" || columnName === "updated_at") {
 		toRet.decorator = "@Fields.updatedAt";
 	}
 
@@ -166,6 +170,15 @@ const arrayProcessor: DataTypeProcessorFunction = (input) => {
 	};
 };
 
+const jsonProcessor: DataTypeProcessorFunction = (input) => {
+	const toRet = {
+		decorator: "@Fields.json",
+		defaultVal: "{}",
+	};
+
+	return toRet;
+};
+
 const intOrAutoIncrementProcessor: DataTypeProcessorFunction = ({
 	columnDefault,
 }) => {
@@ -219,6 +232,9 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 	VARCHAR2: stringProcessor,
 	character: stringProcessor,
 	"character varying": stringProcessor,
+	inet: stringProcessor,
+
+	uuid: stringProcessor,
 
 	CHAR: charProcessor,
 	char: charProcessor,
@@ -232,6 +248,9 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 
 	bit: booleanProcessor,
 	boolean: booleanProcessor,
+
+	json: jsonProcessor,
+	jsonb: jsonProcessor,
 
 	ARRAY: arrayProcessor,
 	"USER-DEFINED": enumProcessor,

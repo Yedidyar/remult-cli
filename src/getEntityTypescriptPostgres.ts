@@ -104,7 +104,7 @@ export async function getEntitiesTypescriptPostgres(
 	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
 	withEnums: boolean = true,
-	schema = "public",
+	schemas: (string | number)[] = [],
 	exclude = [
 		"pg_stat_statements",
 		"pg_stat_statements_info",
@@ -146,10 +146,15 @@ export async function getEntitiesTypescriptPostgres(
 
 	// build the list of classes first (for foreign keys link later)
 	const tablesGenerated: DbTable[] = [];
+
 	await Promise.all(
 		allTables
 			// let's generate schema by schema
-			.filter((c) => c.schema === schema)
+			.filter((c) =>
+				schemas.length === 1 && schemas[0] === "*"
+					? true
+					: schemas.includes(c.schema),
+			)
 			.map(async (table) => {
 				try {
 					if (
@@ -164,7 +169,7 @@ export async function getEntitiesTypescriptPostgres(
 						const { entityString, enumsStrings } =
 							await getEntityTypescriptPostgres(
 								provider,
-								schema,
+								table.schema,
 								table,
 								tableProps,
 								customDecorators,
@@ -227,11 +232,14 @@ async function getEntityTypescriptPostgres(
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
 		if (table.schema === "public" && table.dbName === "user") {
-			// TODO fix dbName should be able to take a schema
-			props.push(`// dbName: '${table.dbName}'`);
-			props.push(`sqlExpression: 'public.${table.dbName}'`);
+			// user is a reserved keyword, we need to speak about public.user
+			props.push(`dbName: 'public.${table.dbName}'`);
+		} else if (table.schema === "public") {
+			if (table.dbName !== table.key) {
+				props.push(`dbName: '${table.dbName}'`);
+			}
 		} else {
-			props.push(`dbName: '${table.dbName}'`);
+			props.push(`dbName: '${table.schema}.${table.dbName}'`);
 		}
 	}
 	let usesValidators = false;
@@ -350,16 +358,14 @@ const handleForeignKeyCol = (
 	additionnalImports: string[],
 	cols: string[],
 ) => {
+	const columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
+	console.log(`columnName`, columnName, columnNameTweak);
+
 	const currentColFk = buildColumn({
 		decorator: "@Relations.toOne#remult",
 		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-		decoratorArgsOptions: [
-			// No need since @Relations has lazy true by default
-			//"lazy: true",
-			"inputType: 'selectEntity'",
-		],
-		// TODO: make the columnNameTweak generic
-		columnNameTweak: columnName.replace(/Id$/, ""),
+		decoratorArgsOptions: ["inputType: 'selectEntity'"],
+		columnNameTweak,
 		columnName,
 		isNullable: "YES",
 		type: foreignKey.foreignClassName,

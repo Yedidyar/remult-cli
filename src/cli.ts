@@ -51,6 +51,13 @@ You can use it to replace the default decorators by your own, extending Remult o
 			?.split(",")
 			.map((c) => c.trim()) ?? ["order", "name"],
 	},
+	schemas: {
+		type: "array",
+		array: true,
+		default: process.env["SCHEMAS"]?.split(",").map((c) => c.trim()) ?? [
+			"public",
+		],
+	},
 } as const;
 
 async function main() {
@@ -61,6 +68,7 @@ async function main() {
 		withEnums,
 		tmpJyc,
 		defaultOrderBy,
+		schemas,
 		...args
 	} = await yargs(process.argv.slice(2))
 		.options(options)
@@ -103,6 +111,7 @@ async function main() {
 			defaultOrderBy,
 			customDecoratorsJSON,
 			withEnums,
+			schemas,
 		);
 		spinner.stop(`Generation done ${green("✓")}`);
 
