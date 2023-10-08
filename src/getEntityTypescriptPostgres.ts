@@ -218,6 +218,9 @@ export async function getEntitiesTypescriptPostgres(
 				});
 
 				entitiesImports.push(tm.ref);
+				if (currentCol.decorator_import) {
+					additionnalImports.push(currentCol.decorator_import);
+				}
 
 				return currentCol.col + "\n";
 			});
@@ -489,14 +492,12 @@ const generateEntityString = (
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
 	const foreignClassNamesToImport = [
-		...table.foreignKeys
-			.filter(({ isSelfReferenced }) => !isSelfReferenced)
-			.map(
-				({ foreignDbName }) =>
-					allTables.find((t) => t.dbName === foreignDbName)!.className,
-			),
+		...table.foreignKeys.map(
+			({ foreignDbName }) =>
+				allTables.find((t) => t.dbName === foreignDbName)!.className,
+		),
 		...entitiesImports,
-	];
+	].filter((c) => c !== table.className);
 
 	const enumsKeys = Object.keys(enums);
 
