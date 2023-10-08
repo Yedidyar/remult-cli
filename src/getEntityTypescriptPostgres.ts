@@ -146,9 +146,14 @@ export async function getEntitiesTypescriptPostgres(
 		return new DbTable(table.table_name, table.table_schema, tableForeignKeys);
 	});
 
-	// build the list of classes first (for foreign keys link later)
-	const tablesGenerated: DbTable[] = [];
-
+	const getEntities: {
+		table: DbTable;
+		enums: Record<string, string[]>;
+		props: string[];
+		cols: string[];
+		additionnalImports: string[];
+		usesValidators: boolean;
+	}[] = [];
 	await Promise.all(
 		allTables
 			// let's generate schema by schema
@@ -168,7 +173,7 @@ export async function getEntitiesTypescriptPostgres(
 							report.sAdded.push(str);
 						}
 
-						const { entityString, enumsStrings } =
+						getEntities.push(
 							await getEntityTypescriptPostgres(
 								provider,
 								table.schema,
@@ -177,18 +182,8 @@ export async function getEntitiesTypescriptPostgres(
 								customDecorators,
 								report,
 								orderBy,
-							);
-						writeFileSync(
-							`${entities_path}${table.className}.ts`,
-							entityString,
+							),
 						);
-
-						if (withEnums) {
-							enumsStrings.forEach(({ enumName, enumString }) => {
-								writeFileSync(`${enums_path}${enumName}.ts`, enumString);
-							});
-						}
-						tablesGenerated.push(table);
 					}
 				} catch (error) {
 					console.error(error);
@@ -196,7 +191,29 @@ export async function getEntitiesTypescriptPostgres(
 			}),
 	);
 
-	const sortedTables = tablesGenerated
+	getEntities.forEach((ent) => {
+		const entityString = generateEntityString(
+			ent.table,
+			ent.enums,
+			ent.props,
+			ent.cols,
+			ent.additionnalImports,
+			ent.usesValidators,
+		);
+
+		const enumsStrings = generateEnumsStrings(ent.enums);
+
+		writeFileSync(`${entities_path}${ent.table.className}.ts`, entityString);
+
+		if (withEnums) {
+			enumsStrings.forEach(({ enumName, enumString }) => {
+				writeFileSync(`${enums_path}${enumName}.ts`, enumString);
+			});
+		}
+	});
+
+	const sortedTables = getEntities
+		.map((e) => e.table)
 		.slice()
 		.sort((a, b) => a.className.localeCompare(b.className));
 
@@ -336,18 +353,14 @@ async function getEntityTypescriptPostgres(
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	const entityString = generateEntityString(
+	return {
 		table,
 		enums,
 		props,
 		cols,
 		additionnalImports,
 		usesValidators,
-	);
-
-	const enumsStrings = generateEnumsStrings(enums);
-
-	return { entityString, enumsStrings };
+	} as const;
 }
 
 function addLineIfNeeded(array: string[], format?: (item: string) => string) {
