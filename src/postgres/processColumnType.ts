@@ -228,6 +228,7 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 	datetime: dateProcessor,
 	datetime2: dateProcessor,
 	"timestamp without time zone": dateProcessor,
+	"timestamp with time zone": dateProcessor,
 
 	bit: booleanProcessor,
 	boolean: booleanProcessor,
