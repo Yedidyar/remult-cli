@@ -202,7 +202,7 @@ export async function getEntitiesTypescriptPostgres(
 
 	// write "_entities.ts"
 	writeFileSync(
-		`${entities_path}_entities.ts`,
+		`${entities_path}index.ts`,
 		`${sortedTables
 			.map((e) => {
 				return `import { ${e.className} } from './${e.className}'`;
@@ -211,7 +211,11 @@ export async function getEntitiesTypescriptPostgres(
 
 export const entities = [
 	${sortedTables.map((c) => c.className).join(",\n  ")}
-]`,
+]
+
+export {
+	${sortedTables.map((c) => c.className).join(",\n  ")}
+}`,
 	);
 
 	return report;
