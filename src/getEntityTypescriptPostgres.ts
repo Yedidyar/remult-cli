@@ -10,6 +10,7 @@ import {
 import { CliReport } from "./report.js";
 import {
 	kababToConstantCase,
+	toCamelCase,
 	toPascalCase,
 	toTitleCase,
 } from "./utils/case.js";
@@ -153,6 +154,12 @@ export async function getEntitiesTypescriptPostgres(
 		cols: string[];
 		additionnalImports: string[];
 		usesValidators: boolean;
+		toManys: {
+			addOn: string;
+			ref: string;
+			refField: string;
+			columnName: string;
+		}[];
 	}[] = [];
 	await Promise.all(
 		allTables
@@ -175,6 +182,7 @@ export async function getEntitiesTypescriptPostgres(
 
 						getEntities.push(
 							await getEntityTypescriptPostgres(
+								allTables,
 								provider,
 								table.schema,
 								table,
@@ -191,13 +199,45 @@ export async function getEntitiesTypescriptPostgres(
 			}),
 	);
 
+	const allToManys = getEntities.flatMap((e) => e.toManys);
+
 	getEntities.forEach((ent) => {
+		const entitiesImports: string[] = [];
+		const additionnalImports = [];
+		const toManys = allToManys
+			.filter((tm) => tm.addOn === ent.table.dbName)
+			.map((tm) => {
+				const currentCol = buildColumn({
+					decorator: "@Relations.toMany#remult",
+					decoratorArgsValueType: `() => ${tm.ref}`,
+					isNullable: "YES",
+					defaultVal: null,
+					type: `${tm.ref}[]`,
+					columnName: tm.columnName,
+					foreignField: tm.refField,
+				});
+
+				entitiesImports.push(tm.ref);
+
+				return currentCol.col + "\n";
+			});
+
+		const cols = ent.cols;
+		if (toManys.length > 0) {
+			cols.push("  // Relations toMany", ...toManys);
+		}
+		additionnalImports.push(...ent.additionnalImports);
+
+		// const cols = [...ent.cols, "//coucou"];
+
 		const entityString = generateEntityString(
+			allTables,
 			ent.table,
 			ent.enums,
 			ent.props,
-			ent.cols,
-			ent.additionnalImports,
+			cols,
+			additionnalImports,
+			entitiesImports,
 			ent.usesValidators,
 		);
 
@@ -239,6 +279,7 @@ export {
 }
 
 async function getEntityTypescriptPostgres(
+	allTables: DbTable[],
 	provider: SqlDatabase,
 	schema: string,
 	table: DbTable,
@@ -252,6 +293,7 @@ async function getEntityTypescriptPostgres(
 
 	const cols: string[] = [];
 	const props = [];
+	const toManys = [];
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
 		if (table.schema === "public" && table.dbName === "user") {
@@ -339,13 +381,25 @@ async function getEntityTypescriptPostgres(
 			(f) => f.columnName === columnName,
 		);
 		if (foreignKey) {
-			handleForeignKeyCol(
+			const { columnNameTweak } = handleForeignKeyCol(
+				allTables,
 				foreignKey,
 				columnName,
 				additionnalImports,
 				cols,
 				isNullable,
 			);
+
+			const toMany = {
+				addOn: foreignKey.foreignDbName,
+				ref: table.className,
+				refField: columnName,
+				columnName:
+					columnNameTweak === toCamelCase(foreignKey.foreignDbName)
+						? `${table.key}`
+						: `${table.key}Of${columnNameTweak}`,
+			};
+			toManys.push(toMany);
 		}
 	}
 
@@ -360,6 +414,7 @@ async function getEntityTypescriptPostgres(
 		cols,
 		additionnalImports,
 		usesValidators,
+		toManys,
 	} as const;
 }
 
@@ -376,6 +431,7 @@ function addLineIfNeeded(array: string[], format?: (item: string) => string) {
 }
 
 const handleForeignKeyCol = (
+	allTables: DbTable[],
 	foreignKey: DbTableForeignKey,
 	columnName: string,
 	additionnalImports: string[],
@@ -384,13 +440,15 @@ const handleForeignKeyCol = (
 ) => {
 	const columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
 
+	const f = allTables.find((t) => t.dbName === foreignKey.foreignDbName)!;
+
 	const currentColFk = buildColumn({
 		decorator: "@Relations.toOne#remult",
-		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
+		decoratorArgsValueType: `() => ${f.className}`,
 		columnNameTweak,
 		columnName,
 		isNullable,
-		type: foreignKey.foreignClassName,
+		type: f.className,
 		defaultVal: null,
 		foreignField: columnName,
 	});
@@ -402,6 +460,8 @@ const handleForeignKeyCol = (
 	if (currentColFk) {
 		cols.push(currentColFk.col + `\n`);
 	}
+
+	return { columnNameTweak };
 };
 
 const handleEnums = async (
@@ -417,21 +477,25 @@ const handleEnums = async (
 };
 
 const generateEntityString = (
+	allTables: DbTable[],
 	table: DbTable,
 	enums: Record<string, string[]>,
 	props: string[],
 	cols: string[],
 	additionnalImports: string[],
+	entitiesImports: string[],
 	usesValidators: boolean,
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
 	const foreignClassNamesToImport = [
-		...new Set(
-			table.foreignKeys
-				.filter(({ isSelfReferenced }) => !isSelfReferenced)
-				.map(({ foreignClassName }) => foreignClassName),
-		),
+		...table.foreignKeys
+			.filter(({ isSelfReferenced }) => !isSelfReferenced)
+			.map(
+				({ foreignDbName }) =>
+					allTables.find((t) => t.dbName === foreignDbName)!.className,
+			),
+		...entitiesImports,
 	];
 
 	const enumsKeys = Object.keys(enums);
@@ -442,8 +506,8 @@ const generateEntityString = (
 		}Fields${usesValidators ? ", Validators" : ""} } from 'remult'` +
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
-			foreignClassNamesToImport,
-			(c) => `import { ${c} } from './${c}'`,
+			[...new Set(foreignClassNamesToImport)],
+			(c) => `import { ${c} } from '.'`,
 		)}` +
 		`${addLineIfNeeded(
 			enumsKeys,

@@ -14,7 +14,7 @@ import pluralize from "pluralize";
 
 export interface DbTableForeignKey {
 	columnName: string;
-	foreignClassName: string;
+	foreignDbName: string;
 	isSelfReferenced: boolean;
 }
 
@@ -33,7 +33,7 @@ export class DbTable {
 			({ foreign_table_name, column_name: columnName }) => {
 				return {
 					columnName,
-					foreignClassName: toPascalCase(foreign_table_name),
+					foreignDbName: foreign_table_name,
 					isSelfReferenced: foreign_table_name === dbName,
 				};
 			},
