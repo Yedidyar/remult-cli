@@ -47,7 +47,9 @@ You can use it to replace the default decorators by your own, extending Remult o
 	"default-order-by": {
 		type: "array",
 		array: true,
-		default: process.env["DEFAULT_ORDER_BY"]?.split(", ") ?? ["order", "name"],
+		default: process.env["DEFAULT_ORDER_BY"]
+			?.split(",")
+			.map((c) => c.trim()) ?? ["order", "name"],
 	},
 } as const;
 
