@@ -39,9 +39,11 @@ export class DbTable {
 			},
 		);
 
-		this.className = toPascalCase(dbName);
+		const plur = toPascalCase(pluralize.plural(dbName));
+		const sing = toPascalCase(pluralize.singular(dbName));
 
-		this.key = pluralize.plural(toCamelCase(this.className));
+		this.className = sing;
+		this.key = toCamelCase(plur);
 	}
 
 	checkNamingConvention() {
