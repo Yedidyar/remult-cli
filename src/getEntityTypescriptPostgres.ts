@@ -201,6 +201,7 @@ export async function getEntitiesTypescriptPostgres(
 
 	const allToManys = getEntities.flatMap((e) => e.toManys);
 
+	const enums: string[] = [];
 	getEntities.forEach((ent) => {
 		const entitiesImports: string[] = [];
 		const additionnalImports = [];
@@ -250,6 +251,7 @@ export async function getEntitiesTypescriptPostgres(
 
 		if (withEnums) {
 			enumsStrings.forEach(({ enumName, enumString }) => {
+				enums.push(enumName);
 				writeFileSync(`${enums_path}${enumName}.ts`, enumString);
 			});
 		}
@@ -260,7 +262,7 @@ export async function getEntitiesTypescriptPostgres(
 		.slice()
 		.sort((a, b) => a.className.localeCompare(b.className));
 
-	// write "_entities.ts"
+	// write entities "index.ts"
 	writeFileSync(
 		`${entities_path}index.ts`,
 		`${sortedTables
@@ -277,6 +279,25 @@ export {
 	${sortedTables.map((c) => c.className).join(",\n  ")}
 }`,
 	);
+
+	if (enums.length > 0) {
+		const sortedEnums = [
+			...new Set(enums.slice().sort((a, b) => a.localeCompare(b))),
+		];
+		// write enums "index.ts"
+		writeFileSync(
+			`${enums_path}index.ts`,
+			`${sortedEnums
+				.map((e) => {
+					return `import { ${e} } from './${e}'`;
+				})
+				.join("\n")}
+		
+export {
+  ${sortedEnums.map((c) => c).join(",\n  ")}
+}`,
+		);
+	}
 
 	return report;
 }
@@ -510,10 +531,7 @@ const generateEntityString = (
 			[...new Set(foreignClassNamesToImport)],
 			(c) => `import { ${c} } from '.'`,
 		)}` +
-		`${addLineIfNeeded(
-			enumsKeys,
-			(c) => `import { ${c} } from '../enums/${c}'`,
-		)}
+		`${addLineIfNeeded(enumsKeys, (c) => `import { ${c} } from '../enums'`)}
 
 @Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
 export class ${table.className} {
