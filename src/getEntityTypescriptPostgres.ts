@@ -161,7 +161,8 @@ export async function getEntitiesTypescriptPostgres(
 			addOn: string;
 			ref: string;
 			refField: string;
-			columnName: string;
+			table_key: string;
+			columnNameTweak: string;
 		}[];
 	}[] = [];
 	await Promise.all(
@@ -211,7 +212,7 @@ export async function getEntitiesTypescriptPostgres(
 
 		const toManys = allToManys
 			.filter((tm) => tm.addOn === ent.table.dbName)
-			.sort((a, b) => (b.columnName > a.columnName ? -1 : 1))
+			.sort((a, b) => a.table_key.localeCompare(b.table_key))
 			.map((tm) => {
 				const number_of_ref = allToManys.filter(
 					(c) => c.addOn === ent.table.dbName && c.ref === tm.ref,
@@ -223,7 +224,10 @@ export async function getEntitiesTypescriptPostgres(
 					isNullable: "YES",
 					defaultVal: null,
 					type: `${tm.ref}[]`,
-					columnName: tm.columnName,
+					columnName:
+						number_of_ref === 1
+							? tm.table_key
+							: `${tm.table_key}Of${tm.columnNameTweak}`,
 					foreignField:
 						number_of_ref === 1 ? "NO_NEED_TO_SPECIFY_FIELD" : tm.refField,
 				});
@@ -429,10 +433,12 @@ async function getEntityTypescriptPostgres(
 				addOn: foreignKey.foreignDbName,
 				ref: table.className,
 				refField: columnName,
-				columnName:
-					columnNameTweak === toCamelCase(foreignKey.foreignDbName)
-						? `${table.key}`
-						: `${table.key}Of${columnNameTweak}`,
+				table_key: table.key,
+				columnNameTweak,
+				// columnName:
+				// 	columnNameTweak === toCamelCase(foreignKey.foreignDbName)
+				// 		? `${table.key}`
+				// 		: `${table.key}Of${columnNameTweak}`,
 			};
 			toManys.push(toMany);
 		}
