@@ -45,7 +45,9 @@ export function buildColumn({
 	foreignField?: string | null;
 }): CliColumnInfo {
 	if (foreignField) {
-		decoratorArgsOptions.unshift(`field: '${foreignField}'`);
+		if (foreignField !== "NO_NEED_TO_SPECIFY_FIELD") {
+			decoratorArgsOptions.unshift(`field: '${foreignField}'`);
+		}
 	} else {
 		if (
 			columnName.toLocaleLowerCase() !== columnName ||
@@ -206,9 +208,15 @@ export async function getEntitiesTypescriptPostgres(
 	getEntities.forEach((ent) => {
 		const entitiesImports: string[] = [];
 		const additionnalImports = [];
+
 		const toManys = allToManys
 			.filter((tm) => tm.addOn === ent.table.dbName)
+			.sort((a, b) => (b.columnName > a.columnName ? -1 : 1))
 			.map((tm) => {
+				const number_of_ref = allToManys.filter(
+					(c) => c.addOn === ent.table.dbName && c.ref === tm.ref,
+				).length;
+
 				const currentCol = buildColumn({
 					decorator: "@Relations.toMany#remult",
 					decoratorArgsValueType: `() => ${tm.ref}`,
@@ -216,7 +224,8 @@ export async function getEntitiesTypescriptPostgres(
 					defaultVal: null,
 					type: `${tm.ref}[]`,
 					columnName: tm.columnName,
-					foreignField: tm.refField,
+					foreignField:
+						number_of_ref === 1 ? "NO_NEED_TO_SPECIFY_FIELD" : tm.refField,
 				});
 
 				entitiesImports.push(tm.ref);
@@ -232,8 +241,6 @@ export async function getEntitiesTypescriptPostgres(
 			cols.push("  // Relations toMany", ...toManys);
 		}
 		additionnalImports.push(...ent.additionnalImports);
-
-		// const cols = [...ent.cols, "//coucou"];
 
 		const entityString = generateEntityString(
 			allTables,
