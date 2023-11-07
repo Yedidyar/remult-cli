@@ -82,4 +82,17 @@ describe("#unit-test build_column", () => {
 				email?: string"
 		`);
 	});
+
+	test("decorator_import", () => {
+		const info = buildColumn({
+			decorator: "@Relations.toOne#remult",
+			decoratorArgsValueType: "",
+			decoratorArgsOptions: [],
+			columnName: "email",
+			isNullable: "YES",
+			type: "string",
+			defaultVal: null,
+		});
+		expect(info.decorator_import).toMatchInlineSnapshot('"import { Relations } from \'remult\'"');
+	});
 });

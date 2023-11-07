@@ -36,11 +36,6 @@ const options = {
 			: true,
 		description: `Example you don't want to overwrite your enums, set: "false" (default: "true")`,
 	},
-	"tmp-jyc": {
-		type: "boolean",
-		hidden: true,
-		default: process.env["TMP_JYC"] === "true",
-	},
 	"custom-decorators": {
 		type: "string",
 		hidden: true,
@@ -52,7 +47,40 @@ You can use it to replace the default decorators by your own, extending Remult o
 	"default-order-by": {
 		type: "array",
 		array: true,
-		default: process.env["DEFAULT_ORDER_BY"]?.split(", ") ?? ["order", "name"],
+		default: process.env["DEFAULT_ORDER_BY"]
+			?.split(",")
+			.map((c) => c.trim()) ?? ["order", "name"],
+	},
+	schemas: {
+		type: "array",
+		array: true,
+		default: process.env["SCHEMAS"]?.split(",").map((c) => c.trim()) ?? [
+			"public",
+		],
+	},
+	"schemas-prefix": {
+		default: process.env["SCHEMAS_PREFIX"]
+			? process.env["SCHEMAS_PREFIX"] === "NEVER"
+				? "NEVER"
+				: process.env["SCHEMAS_PREFIX"] === "ALWAYS"
+				? "ALWAYS"
+				: "SMART"
+			: "SMART",
+		description: `You want to ALWAYS prefix with schema or NEVER?. By defaut, it's SMART, prefixing only when not public.`,
+	},
+	exclude: {
+		type: "array",
+		array: true,
+		default: process.env["EXCLUDE"]?.split(",").map((c) => c.trim()) ?? [
+			"pg_stat_statements",
+			"pg_stat_statements_info",
+			"_prisma_migrations",
+		],
+	},
+	include: {
+		type: "array",
+		array: true,
+		default: process.env["INCLUDE"]?.split(",").map((c) => c.trim()) ?? [],
 	},
 } as const;
 
@@ -62,8 +90,11 @@ async function main() {
 		tableProps,
 		customDecorators,
 		withEnums,
-		tmpJyc,
 		defaultOrderBy,
+		schemas,
+		schemasPrefix,
+		exclude,
+		include,
 		...args
 	} = await yargs(process.argv.slice(2))
 		.options(options)
@@ -106,7 +137,10 @@ async function main() {
 			defaultOrderBy,
 			customDecoratorsJSON,
 			withEnums,
-			tmpJyc,
+			schemas,
+			schemasPrefix,
+			exclude,
+			include,
 		);
 		spinner.stop(`Generation done ${green("✓")}`);
 

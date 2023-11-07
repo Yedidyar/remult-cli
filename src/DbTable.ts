@@ -14,8 +14,7 @@ import pluralize from "pluralize";
 
 export interface DbTableForeignKey {
 	columnName: string;
-	foreignClassName: string;
-	isSelfReferenced: boolean;
+	foreignDbName: string;
 }
 
 export class DbTable {
@@ -28,9 +27,8 @@ export class DbTable {
 	constructor(
 		dbName: string,
 		schema: string,
+		schemasPrefix: "NEVER" | "ALWAYS" | "SMART" = "SMART",
 		foreignKeys: ForeignKey[],
-		// TODO: remove it when @jycouet finish with that
-		tmp_jyc = false,
 	) {
 		this.schema = schema;
 		this.dbName = dbName;
@@ -39,19 +37,26 @@ export class DbTable {
 			({ foreign_table_name, column_name: columnName }) => {
 				return {
 					columnName,
-					foreignClassName: tmp_jyc
-						? toPascalCase(foreign_table_name).replace(/^(.{3})/, "$1rrr")
-						: toPascalCase(foreign_table_name),
-					isSelfReferenced: foreign_table_name === dbName,
+					foreignDbName: foreign_table_name,
 				};
 			},
 		);
 
-		this.className = tmp_jyc
-			? toPascalCase(dbName).replace(/^(.{3})/, "$1rrr")
-			: toPascalCase(dbName);
+		const plur = toPascalCase(pluralize.plural(dbName));
+		const sing = toPascalCase(pluralize.singular(dbName));
 
-		this.key = pluralize.plural(toCamelCase(this.className));
+		if (schemasPrefix === "NEVER") {
+			this.className = sing;
+		} else if (schemasPrefix === "ALWAYS") {
+			this.className = `${toPascalCase(schema)}_${sing}`;
+		} else {
+			if (schema === "public") {
+				this.className = sing;
+			} else {
+				this.className = `${toPascalCase(schema)}_${sing}`;
+			}
+		}
+		this.key = toCamelCase(plur);
 	}
 
 	checkNamingConvention() {

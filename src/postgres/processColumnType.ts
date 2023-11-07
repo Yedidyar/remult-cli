@@ -98,11 +98,20 @@ const dateProcessor: DataTypeProcessorFunction = ({
 		defaultVal: columnDefault !== null ? "new Date()" : "",
 	};
 
-	if (columnName === "createdAt" || columnName === "dateCreated") {
+	if (
+		columnName === "createdAt" ||
+		columnName === "dateCreated" ||
+		columnName === "created_at" ||
+		columnName === "createdat"
+	) {
 		toRet.decorator = "@Fields.createdAt";
 	}
 
-	if (columnName === "updatedAt") {
+	if (
+		columnName === "updatedAt" ||
+		columnName === "updated_at" ||
+		columnName === "updatedat"
+	) {
 		toRet.decorator = "@Fields.updatedAt";
 	}
 
@@ -166,6 +175,13 @@ const arrayProcessor: DataTypeProcessorFunction = (input) => {
 	};
 };
 
+const jsonProcessor: DataTypeProcessorFunction = () => {
+	return {
+		decorator: "@Fields.json",
+		defaultVal: "{}",
+	};
+};
+
 const intOrAutoIncrementProcessor: DataTypeProcessorFunction = ({
 	columnDefault,
 }) => {
@@ -219,6 +235,9 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 	VARCHAR2: stringProcessor,
 	character: stringProcessor,
 	"character varying": stringProcessor,
+	inet: stringProcessor,
+
+	uuid: stringProcessor,
 
 	CHAR: charProcessor,
 	char: charProcessor,
@@ -228,9 +247,13 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 	datetime: dateProcessor,
 	datetime2: dateProcessor,
 	"timestamp without time zone": dateProcessor,
+	"timestamp with time zone": dateProcessor,
 
 	bit: booleanProcessor,
 	boolean: booleanProcessor,
+
+	json: jsonProcessor,
+	jsonb: jsonProcessor,
 
 	ARRAY: arrayProcessor,
 	"USER-DEFINED": enumProcessor,
