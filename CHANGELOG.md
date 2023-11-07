@@ -1,5 +1,21 @@
 # remult-cli
 
+## 0.5.0
+
+### Minor Changes
+
+- 9da7e94: remove TMP_JYC flag
+  new formats (timestamp with time zone, json, jsonb)
+  refactor singular / plural table name
+  options to give different schemas
+  Relations.toOne & raw
+  Relations.toMany
+  entities & enums index.ts
+
+### Patch Changes
+
+- 9da7e94: feat - adding schemas-prefix SMART, NEVER or ALWAYS to name your entities
+
 ## 0.4.1
 
 ### Patch Changes
