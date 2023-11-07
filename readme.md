@@ -2,7 +2,6 @@
 		<img src="https://raw.githubusercontent.com/Yedidyar/remult-cli/main/assets/logo.png" width="200" height="200">
   <h1>Remult CLI</h1>
 
-
  <a href="https://raw.githubusercontent.com/remult/remult/master/LICENSE" rel="nofollow">
 		<img alt="GitHub license" src="https://img.shields.io/badge/license-MIT-blue.svg">
 	</a>
@@ -31,6 +30,16 @@ For more advanced usage, you can utilize the `--help` flag to explore the availa
 
 ```bash
 npx remult-cli --help
+```
+
+### Examples
+
+```bash
+# All entities from two schemas:
+npx remult-cli --schemas auth public
+
+# All entities from all schemas:
+npx remult-cli --schemas '*'
 ```
 
 #### Options

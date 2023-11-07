@@ -101,12 +101,17 @@ const dateProcessor: DataTypeProcessorFunction = ({
 	if (
 		columnName === "createdAt" ||
 		columnName === "dateCreated" ||
-		columnName === "created_at"
+		columnName === "created_at" ||
+		columnName === "createdat"
 	) {
 		toRet.decorator = "@Fields.createdAt";
 	}
 
-	if (columnName === "updatedAt" || columnName === "updated_at") {
+	if (
+		columnName === "updatedAt" ||
+		columnName === "updated_at" ||
+		columnName === "updatedat"
+	) {
 		toRet.decorator = "@Fields.updatedAt";
 	}
 

@@ -69,7 +69,7 @@ export function buildColumn({
 	}
 
 	// by default, let's not publish a field "password"
-	if (columnName.toLocaleLowerCase() === "password") {
+	if (columnName.includes("password")) {
 		decoratorArgsOptions.push(`includeInApi: false`);
 		decoratorArgsOptions.push(`inputType: 'password'`);
 	}
@@ -115,6 +115,7 @@ export async function getEntitiesTypescriptPostgres(
 	customDecorators: Record<string, string> = {},
 	withEnums: boolean = true,
 	schemas: (string | number)[] = [],
+	schemasPrefix: "NEVER" | "ALWAYS" | "SMART" = "SMART",
 	exclude: (string | number)[] = [],
 	include: (string | number)[] = [],
 ) {
@@ -147,7 +148,12 @@ export async function getEntitiesTypescriptPostgres(
 			({ table_name }) => table.table_name === table_name,
 		);
 
-		return new DbTable(table.table_name, table.table_schema, tableForeignKeys);
+		return new DbTable(
+			table.table_name,
+			table.table_schema,
+			schemasPrefix,
+			tableForeignKeys,
+		);
 	});
 
 	const getEntities: {

@@ -58,6 +58,16 @@ You can use it to replace the default decorators by your own, extending Remult o
 			"public",
 		],
 	},
+	"schemas-prefix": {
+		default: process.env["SCHEMAS_PREFIX"]
+			? process.env["SCHEMAS_PREFIX"] === "NEVER"
+				? "NEVER"
+				: process.env["SCHEMAS_PREFIX"] === "ALWAYS"
+				? "ALWAYS"
+				: "SMART"
+			: "SMART",
+		description: `You want to ALWAYS prefix with schema or NEVER?. By defaut, it's SMART, prefixing only when not public.`,
+	},
 	exclude: {
 		type: "array",
 		array: true,
@@ -80,9 +90,9 @@ async function main() {
 		tableProps,
 		customDecorators,
 		withEnums,
-		tmpJyc,
 		defaultOrderBy,
 		schemas,
+		schemasPrefix,
 		exclude,
 		include,
 		...args
@@ -128,6 +138,7 @@ async function main() {
 			customDecoratorsJSON,
 			withEnums,
 			schemas,
+			schemasPrefix,
 			exclude,
 			include,
 		);

@@ -24,7 +24,12 @@ export class DbTable {
 	className: string;
 	foreignKeys: DbTableForeignKey[];
 
-	constructor(dbName: string, schema: string, foreignKeys: ForeignKey[]) {
+	constructor(
+		dbName: string,
+		schema: string,
+		schemasPrefix: "NEVER" | "ALWAYS" | "SMART" = "SMART",
+		foreignKeys: ForeignKey[],
+	) {
 		this.schema = schema;
 		this.dbName = dbName;
 
@@ -40,7 +45,17 @@ export class DbTable {
 		const plur = toPascalCase(pluralize.plural(dbName));
 		const sing = toPascalCase(pluralize.singular(dbName));
 
-		this.className = sing;
+		if (schemasPrefix === "NEVER") {
+			this.className = sing;
+		} else if (schemasPrefix === "ALWAYS") {
+			this.className = `${toPascalCase(schema)}_${sing}`;
+		} else {
+			if (schema === "public") {
+				this.className = sing;
+			} else {
+				this.className = `${toPascalCase(schema)}_${sing}`;
+			}
+		}
 		this.key = toCamelCase(plur);
 	}
 
