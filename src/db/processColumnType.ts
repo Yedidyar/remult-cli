@@ -140,13 +140,15 @@ const intOrNumberProcessor: DataTypeProcessorFunction = ({
 	};
 };
 
-const charProcessor: DataTypeProcessorFunction = ({
-	characterMaximumLength,
-	columnDefault,
-}) => {
-	if (characterMaximumLength == 8 && columnDefault == "('00000000')") {
+const charProcessor: DataTypeProcessorFunction = (input) => {
+	if (
+		input.characterMaximumLength == 8 &&
+		input.columnDefault == "('00000000')"
+	) {
 		return { decorator: "@Fields.dateOnly", type: "Date" };
 	}
+	// fallback
+	return stringProcessor(input);
 };
 
 const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
@@ -217,6 +219,7 @@ export const processColumnType = (
 	const field = dataTypeProcessors[dataType]?.(input);
 
 	if (!field) {
+		console.log("");
 		console.log("unmanaged", {
 			tableObj: JSON.stringify(table),
 			columnName,

@@ -2,6 +2,7 @@ import { DbTable } from "./DbTable.js";
 import { CliReport } from "../report.js";
 
 export interface IDatabase {
+	init(connectionString: string): Promise<void>;
 	getTablesInfo(): Promise<TableInfo[]>;
 	getTableColumnInfo(
 		schema: string,

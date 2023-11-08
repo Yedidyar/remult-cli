@@ -1,11 +1,20 @@
 import { SqlDatabase } from "remult";
-import { IDatabase, TableInfo } from "./types.js";
+import { IDatabase } from "./types.js";
+import { createPostgresDataProvider } from "remult/postgres";
 
 export class DbPostgres implements IDatabase {
-	constructor(private sqlDatabase: SqlDatabase) {}
+	private sqlDatabase: SqlDatabase | null = null;
+
+	constructor() {}
+
+	async init(connectionString: string) {
+		this.sqlDatabase = await createPostgresDataProvider({
+			connectionString,
+		});
+	}
 
 	async getTablesInfo() {
-		const command = this.sqlDatabase.createCommand();
+		const command = this.sqlDatabase!.createCommand();
 		const tablesInfo = await command.execute(
 			`SELECT table_name, table_schema FROM information_schema.tables;`,
 		);
@@ -13,7 +22,7 @@ export class DbPostgres implements IDatabase {
 	}
 
 	async getTableColumnInfo(schema: string, tableName: string) {
-		const command = this.sqlDatabase.createCommand();
+		const command = this.sqlDatabase!.createCommand();
 		const tablesColumnInfo = await command.execute(
 			`SELECT * from INFORMATION_SCHEMA.COLUMNS
 				WHERE
@@ -27,7 +36,7 @@ export class DbPostgres implements IDatabase {
 	}
 
 	async getUniqueInfo(schema: string) {
-		const command = this.sqlDatabase.createCommand();
+		const command = this.sqlDatabase!.createCommand();
 		const tablesColumnInfo = await command.execute(
 			`SELECT table_schema, table_name, column_name
 			FROM information_schema.table_constraints AS c
@@ -47,7 +56,7 @@ export class DbPostgres implements IDatabase {
 	}
 
 	async getForeignKeys() {
-		const command = this.sqlDatabase.createCommand();
+		const command = this.sqlDatabase!.createCommand();
 		const foreignKeys = await command.execute(
 			`SELECT
 				tc.table_schema,
@@ -71,7 +80,7 @@ export class DbPostgres implements IDatabase {
 	}
 
 	async getEnumDef(udt_name: string) {
-		const command = this.sqlDatabase.createCommand();
+		const command = this.sqlDatabase!.createCommand();
 		const enumDef = await command.execute(
 			`SELECT t.typname, e.enumlabel
 							FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
