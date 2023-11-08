@@ -1,7 +1,6 @@
-import { SqlDatabase } from "remult";
-import { DbTable } from "./DbTable.js";
 import { CliReport } from "../report.js";
 import { kababToConstantCase, toPascalCase } from "../utils/case.js";
+import { DbTable } from "./DbTable.js";
 import { ColumnInfo, DataTypeProcessorFunction, IDatabase } from "./types.js";
 
 const stringProcessor: DataTypeProcessorFunction = ({ columnName }) => {

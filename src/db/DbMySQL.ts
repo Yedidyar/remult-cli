@@ -16,11 +16,10 @@ export class DbMySQL implements IDatabase {
 
 	async getTablesInfo() {
 		const result = await this.knex!.knex.raw("SHOW TABLES");
-		let formated = result[0].map((row: any) => {
+		// eslint-disable-next-line
+		return result[0].map((row: any) => {
 			return { table_schema: "public", table_name: Object.values(row)[0] };
 		});
-
-		return formated;
 	}
 
 	async getTableColumnInfo(schema: string, tableName: string) {
@@ -43,6 +42,7 @@ export class DbMySQL implements IDatabase {
 		});
 	}
 
+	// eslint-disable-next-line
 	async getUniqueInfo(schema: string) {
 		// TODO
 		return [];
@@ -91,6 +91,7 @@ export class DbMySQL implements IDatabase {
 		// return foreignKeys.rows;
 	}
 
+	// eslint-disable-next-line
 	async getEnumDef(udt_name: string) {
 		// TODO
 		return [];
