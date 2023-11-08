@@ -2,13 +2,15 @@
 
 import dotenv from "dotenv";
 import yargs from "yargs/yargs";
-import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js";
+import { getEntitiesTypescriptPostgres } from "./getEntity.js";
 
 import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
 import { green } from "kleur/colors";
 import { SqlDatabase } from "remult";
 import { createPostgresDataProvider } from "remult/postgres";
+import { DbPostgres } from "./db/DbPostgress.js";
+import { IDatabase } from "./db/types.js";
 
 dotenv.config();
 
@@ -118,11 +120,13 @@ async function main() {
 	const spinner = p.spinner();
 	spinner.start("Generating everything for you");
 
-	let provider: SqlDatabase | null = null;
+	let db: IDatabase | null = null;
 	try {
-		provider = await createPostgresDataProvider({
-			connectionString: args.connectionString,
-		});
+		db = new DbPostgres(
+			await createPostgresDataProvider({
+				connectionString: args.connectionString,
+			}),
+		);
 	} catch (error) {
 		throw new Error(
 			"Could not connect to the database, check your connectionString",
@@ -131,7 +135,7 @@ async function main() {
 
 	try {
 		const report = await getEntitiesTypescriptPostgres(
-			provider,
+			db,
 			output,
 			tableProps,
 			defaultOrderBy,

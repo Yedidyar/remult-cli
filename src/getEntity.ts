@@ -1,12 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "fs";
-import { DbTable, DbTableForeignKey } from "./DbTable.js";
-import {
-	getEnumDef,
-	getForeignKeys,
-	getTableColumnInfo,
-	getTablesInfo,
-	getUniqueInfo,
-} from "./postgres/commands.js";
+import { DbTable, DbTableForeignKey } from "./db/DbTable.js";
+
 import { CliReport } from "./report.js";
 import {
 	kababToConstantCase,
@@ -14,9 +8,10 @@ import {
 	toPascalCase,
 	toTitleCase,
 } from "./utils/case.js";
-import { processColumnType } from "./postgres/processColumnType.js";
+import { processColumnType } from "./db/processColumnType.js";
 import { SqlDatabase } from "remult";
 import { toFnAndImport } from "./utils/format.js";
+import { IDatabase } from "./db/types.js";
 
 type CliColumnInfo = {
 	col: string;
@@ -108,7 +103,7 @@ export function buildColumn({
 }
 
 export async function getEntitiesTypescriptPostgres(
-	provider: SqlDatabase,
+	db: IDatabase,
 	outputDir: string,
 	tableProps: string,
 	orderBy?: (string | number)[],
@@ -121,13 +116,13 @@ export async function getEntitiesTypescriptPostgres(
 ) {
 	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
-	const tableInfo = await getTablesInfo(provider);
+	const tableInfo = await db.getTablesInfo();
 
 	if (tableInfo.length === 0) {
 		throw new Error("No table found in the database");
 	}
 
-	const foreignKeys = await getForeignKeys(provider);
+	const foreignKeys = await db.getForeignKeys();
 
 	const entities_path = `${outputDir}/entities/`;
 	const enums_path = `${outputDir}/enums/`;
@@ -193,7 +188,7 @@ export async function getEntitiesTypescriptPostgres(
 						getEntities.push(
 							await getEntityTypescriptPostgres(
 								allTables,
-								provider,
+								db,
 								table.schema,
 								table,
 								tableProps,
@@ -322,7 +317,7 @@ export {
 
 async function getEntityTypescriptPostgres(
 	allTables: DbTable[],
-	provider: SqlDatabase,
+	db: IDatabase,
 	schema: string,
 	table: DbTable,
 	tableProps: string,
@@ -352,7 +347,7 @@ async function getEntityTypescriptPostgres(
 	let usesValidators = false;
 	let defaultOrderBy: string | null = null;
 	const columnWithId: string[] = [];
-	const uniqueInfo = await getUniqueInfo(provider, schema);
+	const uniqueInfo = await db.getUniqueInfo(schema);
 	for (const {
 		column_name: columnName,
 		column_default: columnDefault,
@@ -361,7 +356,7 @@ async function getEntityTypescriptPostgres(
 		character_maximum_length: characterMaximumLength,
 		udt_name: udtName,
 		is_nullable: isNullable,
-	} of await getTableColumnInfo(provider, schema, table.dbName)) {
+	} of await db.getTableColumnInfo(schema, table.dbName)) {
 		const {
 			decorator: decoratorInfered,
 			defaultVal,
@@ -378,7 +373,7 @@ async function getEntityTypescriptPostgres(
 			udtName,
 			report,
 			enums,
-			provider,
+			db,
 			table,
 		});
 		if (columnName.toLowerCase().includes("id")) {
@@ -400,9 +395,9 @@ async function getEntityTypescriptPostgres(
 
 		// TODO: extract this logic from the process column
 		if (enumAdditionalName) {
-			await handleEnums(enums, "USER-DEFINED", provider, enumAdditionalName);
+			await handleEnums(enums, "USER-DEFINED", db, enumAdditionalName);
 		}
-		await handleEnums(enums, dataType, provider, udtName);
+		await handleEnums(enums, dataType, db, udtName);
 
 		if (!defaultOrderBy && orderBy?.includes(columnName)) {
 			defaultOrderBy = columnName;
@@ -518,11 +513,11 @@ const handleForeignKeyCol = (
 const handleEnums = async (
 	enums: Record<string, string[]>,
 	dataType: string,
-	provider: SqlDatabase,
+	db: IDatabase,
 	udtName: string,
 ) => {
 	if ("USER-DEFINED" === dataType) {
-		const enumDef = await getEnumDef(provider, udtName);
+		const enumDef = await db.getEnumDef(udtName);
 		enums[toPascalCase(udtName)] = enumDef.map((e) => e.enumlabel);
 	}
 };
