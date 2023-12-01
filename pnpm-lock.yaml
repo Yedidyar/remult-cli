@@ -1,5 +1,9 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 dependencies:
   '@clack/prompts':
     specifier: ^0.7.0
@@ -17,8 +21,8 @@ dependencies:
     specifier: ^8.0.0
     version: 8.0.0
   remult:
-    specifier: ^0.23.0-exp.24
-    version: 0.23.0-exp.24
+    specifier: ^0.23.0-exp.32
+    version: 0.23.0-exp.32
   yargs:
     specifier: ^17.7.2
     version: 17.7.2
@@ -2631,8 +2635,8 @@ packages:
       functions-have-names: 1.2.3
     dev: true
 
-  /remult@0.23.0-exp.24:
-    resolution: {integrity: sha512-Rw6c/0unQUEMceFwODg9r6pxFphytnYHgTL+nIvjhjJzsOaqTv4cqWygbjPgk57wb5yW1nLKO7ngyex4D9swIA==}
+  /remult@0.23.0-exp.32:
+    resolution: {integrity: sha512-Tqg0FARHGWXG9vX8diGaf6wYxlK2B6+AG3DVppMpVz6ds9qHwMeuT5A1B6lbsdLfJu2Rk6KA4Ao+YZ3IRFlMcg==}
     dependencies:
       '@paralleldrive/cuid2': 2.2.2
       reflect-metadata: 0.1.13
@@ -3391,7 +3395,3 @@ packages:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
     dev: true
-
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
