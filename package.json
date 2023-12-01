@@ -1,6 +1,6 @@
 {
 	"name": "remult-cli",
-	"version": "0.4.1",
+	"version": "0.5.0",
 	"license": "MIT",
 	"bin": {
 		"remult": "dist/cli.js"
@@ -29,16 +29,16 @@
 		"kleur": "^4.1.5",
 		"pg": "^8.11.3",
 		"pluralize": "^8.0.0",
-		"remult": "^0.22.8",
+		"remult": "^0.23.0-exp.24",
 		"yargs": "^17.7.2"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.26.2",
-		"@types/pluralize": "^0.0.31",
+		"@types/pluralize": "^0.0.32",
 		"@types/yargs": "^17.0.28",
-		"@typescript-eslint/eslint-plugin": "^6.7.5",
-		"@typescript-eslint/parser": "^6.7.5",
-		"eslint": "^8.52.0",
+		"@typescript-eslint/eslint-plugin": "^6.13.1",
+		"@typescript-eslint/parser": "^6.9.1",
+		"eslint": "^8.51.0",
 		"eslint-plugin-sonarjs": "^0.21.0",
 		"prettier": "^3.0.3",
 		"vitest": "^0.34.6"

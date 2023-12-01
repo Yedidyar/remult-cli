@@ -10,6 +10,7 @@ import {
 import { CliReport } from "./report.js";
 import {
 	kababToConstantCase,
+	toCamelCase,
 	toPascalCase,
 	toTitleCase,
 } from "./utils/case.js";
@@ -25,12 +26,13 @@ type CliColumnInfo = {
 export function buildColumn({
 	decorator,
 	decoratorArgsValueType,
+	decoratorArgsOptions = [],
 	columnNameTweak,
 	columnName,
 	isNullable,
 	type,
 	defaultVal,
-	decoratorArgsOptions = [],
+	foreignField,
 }: {
 	decorator: string;
 	decoratorArgsValueType: string;
@@ -40,16 +42,24 @@ export function buildColumn({
 	isNullable: "YES" | "NO";
 	type: string | null;
 	defaultVal: string | null;
+	foreignField?: string | null;
 }): CliColumnInfo {
-	if (
-		columnName.toLocaleLowerCase() !== columnName ||
-		columnNameTweak ||
-		columnName === "order"
-	) {
-		decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
+	if (foreignField) {
+		if (foreignField !== "NO_NEED_TO_SPECIFY_FIELD") {
+			decoratorArgsOptions.unshift(`field: '${foreignField}'`);
+		}
+	} else {
+		if (
+			columnName.toLocaleLowerCase() !== columnName ||
+			columnNameTweak ||
+			columnName === "order" ||
+			columnName === "from"
+		) {
+			decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
+		}
 	}
 
-	if (isNullable === "YES") {
+	if (isNullable === "YES" && !foreignField) {
 		decoratorArgsOptions.push(`allowNull: true`);
 	}
 
@@ -59,7 +69,7 @@ export function buildColumn({
 	}
 
 	// by default, let's not publish a field "password"
-	if (columnName.toLocaleLowerCase() === "password") {
+	if (columnName.includes("password")) {
 		decoratorArgsOptions.push(`includeInApi: false`);
 		decoratorArgsOptions.push(`inputType: 'password'`);
 	}
@@ -104,15 +114,10 @@ export async function getEntitiesTypescriptPostgres(
 	orderBy?: (string | number)[],
 	customDecorators: Record<string, string> = {},
 	withEnums: boolean = true,
-	// TODO: remove it when @jycouet finish with that
-	tmp_jyc = false,
-	schema = "public",
-	exclude = [
-		"pg_stat_statements",
-		"pg_stat_statements_info",
-		"_prisma_migrations",
-	],
-	include: string[] = [],
+	schemas: (string | number)[] = [],
+	schemasPrefix: "NEVER" | "ALWAYS" | "SMART" = "SMART",
+	exclude: (string | number)[] = [],
+	include: (string | number)[] = [],
 ) {
 	const report: CliReport = { typeCouldBeBetter: [], sAdded: [] };
 
@@ -146,17 +151,34 @@ export async function getEntitiesTypescriptPostgres(
 		return new DbTable(
 			table.table_name,
 			table.table_schema,
+			schemasPrefix,
 			tableForeignKeys,
-			tmp_jyc,
 		);
 	});
 
-	// build the list of classes first (for foreign keys link later)
-	const tablesGenerated: DbTable[] = [];
+	const getEntities: {
+		table: DbTable;
+		enums: Record<string, string[]>;
+		props: string[];
+		cols: string[];
+		additionnalImports: string[];
+		usesValidators: boolean;
+		toManys: {
+			addOn: string;
+			ref: string;
+			refField: string;
+			table_key: string;
+			columnNameTweak: string;
+		}[];
+	}[] = [];
 	await Promise.all(
 		allTables
 			// let's generate schema by schema
-			.filter((c) => c.schema === schema)
+			.filter((c) =>
+				schemas.length === 1 && schemas[0] === "*"
+					? true
+					: schemas.includes(c.schema),
+			)
 			.map(async (table) => {
 				try {
 					if (
@@ -168,27 +190,18 @@ export async function getEntitiesTypescriptPostgres(
 							report.sAdded.push(str);
 						}
 
-						const { entityString, enumsStrings } =
+						getEntities.push(
 							await getEntityTypescriptPostgres(
+								allTables,
 								provider,
-								schema,
+								table.schema,
 								table,
 								tableProps,
 								customDecorators,
 								report,
 								orderBy,
-							);
-						writeFileSync(
-							`${entities_path}${table.className}.ts`,
-							entityString,
+							),
 						);
-
-						if (withEnums) {
-							enumsStrings.forEach(({ enumName, enumString }) => {
-								writeFileSync(`${enums_path}${enumName}.ts`, enumString);
-							});
-						}
-						tablesGenerated.push(table);
 					}
 				} catch (error) {
 					console.error(error);
@@ -196,13 +209,80 @@ export async function getEntitiesTypescriptPostgres(
 			}),
 	);
 
-	const sortedTables = tablesGenerated
+	const allToManys = getEntities.flatMap((e) => e.toManys);
+
+	const enums: string[] = [];
+	getEntities.forEach((ent) => {
+		const entitiesImports: string[] = [];
+		const additionnalImports = [];
+
+		const toManys = allToManys
+			.filter((tm) => tm.addOn === ent.table.dbName)
+			.sort((a, b) => a.table_key.localeCompare(b.table_key))
+			.map((tm) => {
+				const number_of_ref = allToManys.filter(
+					(c) => c.addOn === ent.table.dbName && c.ref === tm.ref,
+				).length;
+
+				const currentCol = buildColumn({
+					decorator: "@Relations.toMany#remult",
+					decoratorArgsValueType: `() => ${tm.ref}`,
+					isNullable: "YES",
+					defaultVal: null,
+					type: `${tm.ref}[]`,
+					columnName:
+						number_of_ref === 1
+							? tm.table_key
+							: `${tm.table_key}Of${tm.columnNameTweak}`,
+					foreignField:
+						number_of_ref === 1 ? "NO_NEED_TO_SPECIFY_FIELD" : tm.refField,
+				});
+
+				entitiesImports.push(tm.ref);
+				if (currentCol.decorator_import) {
+					additionnalImports.push(currentCol.decorator_import);
+				}
+
+				return currentCol.col + "\n";
+			});
+
+		const cols = ent.cols;
+		if (toManys.length > 0) {
+			cols.push("  // Relations toMany", ...toManys);
+		}
+		additionnalImports.push(...ent.additionnalImports);
+
+		const entityString = generateEntityString(
+			allTables,
+			ent.table,
+			ent.enums,
+			ent.props,
+			cols,
+			additionnalImports,
+			entitiesImports,
+			ent.usesValidators,
+		);
+
+		const enumsStrings = generateEnumsStrings(ent.enums);
+
+		writeFileSync(`${entities_path}${ent.table.className}.ts`, entityString);
+
+		if (withEnums) {
+			enumsStrings.forEach(({ enumName, enumString }) => {
+				enums.push(enumName);
+				writeFileSync(`${enums_path}${enumName}.ts`, enumString);
+			});
+		}
+	});
+
+	const sortedTables = getEntities
+		.map((e) => e.table)
 		.slice()
 		.sort((a, b) => a.className.localeCompare(b.className));
 
-	// write "_entities.ts"
+	// write entities "index.ts"
 	writeFileSync(
-		`${entities_path}_entities.ts`,
+		`${entities_path}index.ts`,
 		`${sortedTables
 			.map((e) => {
 				return `import { ${e.className} } from './${e.className}'`;
@@ -211,13 +291,37 @@ export async function getEntitiesTypescriptPostgres(
 
 export const entities = [
 	${sortedTables.map((c) => c.className).join(",\n  ")}
-]`,
+]
+
+export {
+	${sortedTables.map((c) => c.className).join(",\n  ")}
+}`,
 	);
+
+	if (enums.length > 0) {
+		const sortedEnums = [
+			...new Set(enums.slice().sort((a, b) => a.localeCompare(b))),
+		];
+		// write enums "index.ts"
+		writeFileSync(
+			`${enums_path}index.ts`,
+			`${sortedEnums
+				.map((e) => {
+					return `import { ${e} } from './${e}'`;
+				})
+				.join("\n")}
+		
+export {
+  ${sortedEnums.map((c) => c).join(",\n  ")}
+}`,
+		);
+	}
 
 	return report;
 }
 
 async function getEntityTypescriptPostgres(
+	allTables: DbTable[],
 	provider: SqlDatabase,
 	schema: string,
 	table: DbTable,
@@ -231,18 +335,23 @@ async function getEntityTypescriptPostgres(
 
 	const cols: string[] = [];
 	const props = [];
+	const toManys = [];
 	props.push(tableProps);
 	if (table.dbName !== table.className) {
 		if (table.schema === "public" && table.dbName === "user") {
-			// TODO fix dbName should be able to take a schema
-			props.push(`// dbName: '${table.dbName}'`);
-			props.push(`sqlExpression: 'public.${table.dbName}'`);
+			// user is a reserved keyword, we need to speak about public.user
+			props.push(`dbName: 'public.${table.dbName}'`);
+		} else if (table.schema === "public") {
+			if (table.dbName !== table.key) {
+				props.push(`dbName: '${table.dbName}'`);
+			}
 		} else {
-			props.push(`dbName: '${table.dbName}'`);
+			props.push(`dbName: '${table.schema}.${table.dbName}'`);
 		}
 	}
 	let usesValidators = false;
 	let defaultOrderBy: string | null = null;
+	const columnWithId: string[] = [];
 	const uniqueInfo = await getUniqueInfo(provider, schema);
 	for (const {
 		column_name: columnName,
@@ -272,7 +381,9 @@ async function getEntityTypescriptPostgres(
 			provider,
 			table,
 		});
-
+		if (columnName.toLowerCase().includes("id")) {
+			columnWithId.push(columnName);
+		}
 		if (
 			uniqueInfo.find(
 				(u) =>
@@ -297,15 +408,6 @@ async function getEntityTypescriptPostgres(
 			defaultOrderBy = columnName;
 		}
 
-		const foreignKey = table.foreignKeys.find(
-			(f) => f.columnName === columnName,
-		);
-
-		if (foreignKey) {
-			handleForeignKeyCol(foreignKey, columnName, additionnalImports, cols);
-			continue;
-		}
-
 		const currentCol = buildColumn({
 			decorator,
 			decoratorArgsValueType,
@@ -319,24 +421,52 @@ async function getEntityTypescriptPostgres(
 			additionnalImports.push(currentCol.decorator_import);
 		}
 		cols.push(currentCol.col + `\n`);
+
+		const foreignKey = table.foreignKeys.find(
+			(f) => f.columnName === columnName,
+		);
+		if (foreignKey) {
+			const { columnNameTweak } = handleForeignKeyCol(
+				allTables,
+				foreignKey,
+				columnName,
+				additionnalImports,
+				cols,
+				isNullable,
+			);
+
+			const toMany = {
+				addOn: foreignKey.foreignDbName,
+				ref: table.className,
+				refField: columnName,
+				table_key: table.key,
+				columnNameTweak,
+				// columnName:
+				// 	columnNameTweak === toCamelCase(foreignKey.foreignDbName)
+				// 		? `${table.key}`
+				// 		: `${table.key}Of${columnNameTweak}`,
+			};
+			toManys.push(toMany);
+		}
 	}
 
 	if (defaultOrderBy) {
 		props.push(`defaultOrderBy: { ${defaultOrderBy}: 'asc' }`);
 	}
 
-	const entityString = generateEntityString(
+	if (!columnWithId.includes("id")) {
+		props.push(`id: { ${columnWithId.map((c) => `${c}: true`).join(", ")} }`);
+	}
+
+	return {
 		table,
 		enums,
 		props,
 		cols,
 		additionnalImports,
 		usesValidators,
-	);
-
-	const enumsStrings = generateEnumsStrings(enums);
-
-	return { entityString, enumsStrings };
+		toManys,
+	} as const;
 }
 
 function addLineIfNeeded(array: string[], format?: (item: string) => string) {
@@ -352,21 +482,26 @@ function addLineIfNeeded(array: string[], format?: (item: string) => string) {
 }
 
 const handleForeignKeyCol = (
+	allTables: DbTable[],
 	foreignKey: DbTableForeignKey,
 	columnName: string,
 	additionnalImports: string[],
 	cols: string[],
+	isNullable: "YES" | "NO",
 ) => {
+	const columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
+
+	const f = allTables.find((t) => t.dbName === foreignKey.foreignDbName)!;
+
 	const currentColFk = buildColumn({
-		decorator: "@Field",
-		decoratorArgsValueType: `() => ${foreignKey.foreignClassName}`,
-		decoratorArgsOptions: ["lazy: true", "inputType: 'selectEntity'"],
-		// TODO: make the columnNameTweak generic
-		columnNameTweak: columnName.replace(/Id$/, ""),
+		decorator: "@Relations.toOne#remult",
+		decoratorArgsValueType: `() => ${f.className}`,
+		columnNameTweak,
 		columnName,
-		isNullable: "YES",
-		type: foreignKey.foreignClassName,
+		isNullable,
+		type: f.className,
 		defaultVal: null,
+		foreignField: columnName,
 	});
 
 	if (currentColFk.decorator_import) {
@@ -376,6 +511,8 @@ const handleForeignKeyCol = (
 	if (currentColFk) {
 		cols.push(currentColFk.col + `\n`);
 	}
+
+	return { columnNameTweak };
 };
 
 const handleEnums = async (
@@ -391,22 +528,24 @@ const handleEnums = async (
 };
 
 const generateEntityString = (
+	allTables: DbTable[],
 	table: DbTable,
 	enums: Record<string, string[]>,
 	props: string[],
 	cols: string[],
 	additionnalImports: string[],
+	entitiesImports: string[],
 	usesValidators: boolean,
 ) => {
 	const isContainsForeignKeys = table.foreignKeys.length > 0;
 
 	const foreignClassNamesToImport = [
-		...new Set(
-			table.foreignKeys
-				.filter(({ isSelfReferenced }) => !isSelfReferenced)
-				.map(({ foreignClassName }) => foreignClassName),
+		...table.foreignKeys.map(
+			({ foreignDbName }) =>
+				allTables.find((t) => t.dbName === foreignDbName)!.className,
 		),
-	];
+		...entitiesImports,
+	].filter((c) => c !== table.className);
 
 	const enumsKeys = Object.keys(enums);
 
@@ -416,15 +555,12 @@ const generateEntityString = (
 		}Fields${usesValidators ? ", Validators" : ""} } from 'remult'` +
 		`${addLineIfNeeded([...new Set(additionnalImports)])}` +
 		`${addLineIfNeeded(
-			foreignClassNamesToImport,
-			(c) => `import { ${c} } from './${c}'`,
+			[...new Set(foreignClassNamesToImport)],
+			(c) => `import { ${c} } from '.'`,
 		)}` +
-		`${addLineIfNeeded(
-			enumsKeys,
-			(c) => `import { ${c} } from '../enums/${c}'`,
-		)}
+		`${addLineIfNeeded(enumsKeys, (c) => `import { ${c} } from '../enums'`)}
 
-@Entity('${table.key}', {\n\t${props.join(",\n\t")}\n})
+@Entity<${table.className}>('${table.key}', {\n\t${props.join(",\n\t")}\n})
 export class ${table.className} {
 ${cols.join(`\n`)}}
 `
