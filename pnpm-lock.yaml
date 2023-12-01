@@ -1,5 +1,9 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 dependencies:
   '@clack/prompts':
     specifier: ^0.7.0
@@ -43,8 +47,8 @@ devDependencies:
     specifier: ^8.51.0
     version: 8.52.0
   eslint-plugin-sonarjs:
-    specifier: ^0.21.0
-    version: 0.21.0(eslint@8.52.0)
+    specifier: ^0.23.0
+    version: 0.23.0(eslint@8.52.0)
   prettier:
     specifier: ^3.0.3
     version: 3.0.3
@@ -1397,8 +1401,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /eslint-plugin-sonarjs@0.21.0(eslint@8.52.0):
-    resolution: {integrity: sha512-oezUDfFT5S6j3rQheZ4DLPrbetPmMS7zHIKWGHr0CM3g5JgyZroz1FpIKa4jV83NsGpmgIeagpokWDKIJzRQmw==}
+  /eslint-plugin-sonarjs@0.23.0(eslint@8.52.0):
+    resolution: {integrity: sha512-z44T3PBf9W7qQ/aR+NmofOTyg6HLhSEZOPD4zhStqBpLoMp8GYhFksuUBnCxbnf1nfISpKBVkQhiBLFI/F4Wlg==}
     engines: {node: '>=14'}
     peerDependencies:
       eslint: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -3391,7 +3395,3 @@ packages:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
     dev: true
-
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false

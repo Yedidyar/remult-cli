@@ -39,7 +39,7 @@
 		"@typescript-eslint/eslint-plugin": "^6.13.1",
 		"@typescript-eslint/parser": "^6.9.1",
 		"eslint": "^8.51.0",
-		"eslint-plugin-sonarjs": "^0.21.0",
+		"eslint-plugin-sonarjs": "^0.23.0",
 		"prettier": "^3.0.3",
 		"vitest": "^0.34.6"
 	}
