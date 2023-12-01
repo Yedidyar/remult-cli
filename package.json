@@ -29,7 +29,7 @@
 		"kleur": "^4.1.5",
 		"pg": "^8.11.3",
 		"pluralize": "^8.0.0",
-		"remult": "^0.23.0-exp.18",
+		"remult": "^0.23.0-exp.24",
 		"yargs": "^17.7.2"
 	},
 	"devDependencies": {
