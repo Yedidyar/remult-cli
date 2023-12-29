@@ -8,12 +8,12 @@ dependencies:
   '@clack/prompts':
     specifier: ^0.7.0
     version: 0.7.0
+  '@kitql/helpers':
+    specifier: ^0.8.7
+    version: 0.8.7
   dotenv:
     specifier: ^16.3.1
     version: 16.3.1
-  kleur:
-    specifier: ^4.1.5
-    version: 4.1.5
   pg:
     specifier: ^8.11.3
     version: 8.11.3
@@ -21,8 +21,8 @@ dependencies:
     specifier: ^8.0.0
     version: 8.0.0
   remult:
-    specifier: ^0.23.0-exp.24
-    version: 0.23.0-exp.24
+    specifier: ^0.24.0
+    version: 0.24.0
   yargs:
     specifier: ^17.7.2
     version: 17.7.2
@@ -561,6 +561,11 @@ packages:
   /@jridgewell/sourcemap-codec@1.4.15:
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
     dev: true
+
+  /@kitql/helpers@0.8.7:
+    resolution: {integrity: sha512-5ZLivmOF4QLQWjCAPzzAk0ZYKLIhJkNpClXUtEVSTFJdWT8Qfg3b/yDzJDT6gDd3FgWHFEKk99Fr7/tnYJO6fw==}
+    engines: {node: ^16.14 || >=18}
+    dev: false
 
   /@manypkg/find-root@1.1.0:
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
@@ -2073,6 +2078,7 @@ packages:
   /kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+    dev: true
 
   /levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -2638,8 +2644,8 @@ packages:
       functions-have-names: 1.2.3
     dev: true
 
-  /remult@0.23.0-exp.24:
-    resolution: {integrity: sha512-Rw6c/0unQUEMceFwODg9r6pxFphytnYHgTL+nIvjhjJzsOaqTv4cqWygbjPgk57wb5yW1nLKO7ngyex4D9swIA==}
+  /remult@0.24.0:
+    resolution: {integrity: sha512-kd8rMtV2sKIDybPxlbjH5qQgOz9QbwOToGYKFRyLTmPwNbx9pf+xGQbNUMz82mcqJYHqJhM3Tstp1pNbzLXMWQ==}
     dependencies:
       '@paralleldrive/cuid2': 2.2.2
       reflect-metadata: 0.1.13

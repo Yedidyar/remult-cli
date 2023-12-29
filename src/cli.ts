@@ -6,7 +6,7 @@ import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js"
 
 import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
-import { green } from "kleur/colors";
+import { green } from "@kitql/helpers";
 import { SqlDatabase } from "remult";
 import { createPostgresDataProvider } from "remult/postgres";
 
