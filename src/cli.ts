@@ -75,7 +75,6 @@ You can use it to replace the default decorators by your own, extending Remult o
 		default: process.env["EXCLUDE"]?.split(",").map((c) => c.trim()) ?? [
 			"pg_stat_statements",
 			"pg_stat_statements_info",
-			"_prisma_migrations",
 		],
 	},
 	include: {
