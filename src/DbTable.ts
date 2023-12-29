@@ -7,7 +7,7 @@ import {
 	bold,
 	strikethrough,
 	red,
-} from "kleur/colors";
+} from "@kitql/helpers";
 import type { ForeignKey } from "./postgres/commands.js";
 import { toCamelCase, toPascalCase } from "./utils/case.js";
 import pluralize from "pluralize";

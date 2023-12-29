@@ -6,7 +6,7 @@ import { getEntitiesTypescriptPostgres } from "./getEntityTypescriptPostgres.js"
 
 import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
-import { green } from "kleur/colors";
+import { green } from "@kitql/helpers";
 import { SqlDatabase } from "remult";
 import { createPostgresDataProvider } from "remult/postgres";
 
@@ -63,8 +63,8 @@ You can use it to replace the default decorators by your own, extending Remult o
 			? process.env["SCHEMAS_PREFIX"] === "NEVER"
 				? "NEVER"
 				: process.env["SCHEMAS_PREFIX"] === "ALWAYS"
-				  ? "ALWAYS"
-				  : "SMART"
+					? "ALWAYS"
+					: "SMART"
 			: "SMART",
 		description: `You want to ALWAYS prefix with schema or NEVER?. By defaut, it's SMART, prefixing only when not public.`,
 	},

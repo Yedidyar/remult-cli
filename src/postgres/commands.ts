@@ -33,11 +33,11 @@ export interface EnumDef {
 }
 
 export const getTablesInfo = async (
-	sqlDatabase: SqlDatabase
+	sqlDatabase: SqlDatabase,
 ): Promise<TableInfo[]> => {
 	const command = sqlDatabase.createCommand();
 	const tablesInfo = await command.execute(
-		`SELECT table_name, table_schema FROM information_schema.tables;`
+		`SELECT table_name, table_schema FROM information_schema.tables;`,
 	);
 
 	return tablesInfo.rows;
@@ -46,7 +46,7 @@ export const getTablesInfo = async (
 export const getTableColumnInfo = async (
 	sqlDatabase: SqlDatabase,
 	schema: string,
-	tableName: string
+	tableName: string,
 ): Promise<TableColumnInfo[]> => {
 	const command = sqlDatabase.createCommand();
 	const tablesColumnInfo = await command.execute(
@@ -55,7 +55,7 @@ export const getTableColumnInfo = async (
 				table_name=${command.addParameterAndReturnSqlToken(tableName)}
 				AND
 				table_schema=${command.addParameterAndReturnSqlToken(schema)}
-      ORDER BY ordinal_position`
+      ORDER BY ordinal_position`,
 	);
 
 	return tablesColumnInfo.rows;
@@ -63,7 +63,7 @@ export const getTableColumnInfo = async (
 
 export const getUniqueInfo = async (
 	sqlDatabase: SqlDatabase,
-	schema: string
+	schema: string,
 ): Promise<
 	{
 		table_schema: string;
@@ -78,20 +78,22 @@ export const getUniqueInfo = async (
 			 JOIN information_schema.constraint_column_usage AS cc
 					USING (table_schema, table_name, constraint_name)
 		WHERE c.constraint_type = 'UNIQUE' ` +
-			`AND table_schema = ${command.addParameterAndReturnSqlToken(schema)};`
+			`AND table_schema = ${command.addParameterAndReturnSqlToken(schema)};`,
 	);
 
-	return tablesColumnInfo.rows.map((c) => {
-		return {
-			table_schema: c.table_schema,
-			table_name: c.table_name,
-			column_name: c.column_name,
-		};
-	});
+	return tablesColumnInfo.rows.map(
+		(c: { table_schema: string; table_name: string; column_name: string }) => {
+			return {
+				table_schema: c.table_schema,
+				table_name: c.table_name,
+				column_name: c.column_name,
+			};
+		},
+	);
 };
 
 export const getForeignKeys = async (
-	sqlDatabase: SqlDatabase
+	sqlDatabase: SqlDatabase,
 ): Promise<ForeignKey[]> => {
 	const command = sqlDatabase.createCommand();
 	const foreignKeys = await command.execute(
@@ -110,7 +112,7 @@ export const getForeignKeys = async (
 			JOIN information_schema.constraint_column_usage AS ccu
 			ON ccu.constraint_name = tc.constraint_name
 			AND ccu.table_schema = tc.table_schema
-		WHERE tc.constraint_type = 'FOREIGN KEY';`
+		WHERE tc.constraint_type = 'FOREIGN KEY';`,
 	);
 
 	return foreignKeys.rows;
@@ -118,14 +120,14 @@ export const getForeignKeys = async (
 
 export const getEnumDef = async (
 	sqlDatabase: SqlDatabase,
-	udt_name: string
+	udt_name: string,
 ): Promise<EnumDef[]> => {
 	const command = sqlDatabase.createCommand();
 	const enumDef = await command.execute(
 		`SELECT t.typname, e.enumlabel
 						FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
 						WHERE t.typname = '${udt_name}'
-						ORDER BY t.typname, e.enumlabel;`
+						ORDER BY t.typname, e.enumlabel;`,
 	);
 
 	return enumDef.rows;

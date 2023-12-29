@@ -1,4 +1,4 @@
-import { green, yellow } from "kleur/colors";
+import { green, yellow } from "@kitql/helpers";
 import * as p from "@clack/prompts";
 
 export interface CliReport {
@@ -35,14 +35,14 @@ export const logReport = (
 		if (report.typeCouldBeBetter.length > 0) {
 			p.log.info(
 				`${green(`Type need to be manually typed`)}: ${yellow(
-					report.typeCouldBeBetter.length,
+					report.typeCouldBeBetter.length.toString(),
 				)}`,
 			);
 		}
 		if (report.sAdded.length > 0) {
 			p.log.info(
 				`${green(`We added an "s" to the key to avoid collision on`)}: ${yellow(
-					report.sAdded.length,
+					report.sAdded.length.toString(),
 				)}`,
 			);
 		}
