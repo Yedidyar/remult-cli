@@ -484,9 +484,15 @@ const handleForeignKeyCol = (
 	cols: string[],
 	isNullable: "YES" | "NO",
 ) => {
-	const columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
+	let columnNameTweak = columnName.replace(/_id$/, "").replace(/Id$/, "");
 
 	const f = allTables.find((t) => t.dbName === foreignKey.foreignDbName)!;
+
+	// If after the light tweak, the column name is the same as before,
+	// let's go to another strategy, className + columnName (let's be very explicit to avoid colision)
+	if (columnNameTweak === columnName) {
+		columnNameTweak = toCamelCase(f.className) + toPascalCase(columnName);
+	}
 
 	const currentColFk = buildColumn({
 		decorator: "@Relations.toOne#remult",
