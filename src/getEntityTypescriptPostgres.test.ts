@@ -93,6 +93,8 @@ describe("#unit-test build_column", () => {
 			type: "string",
 			defaultVal: null,
 		});
-		expect(info.decorator_import).toMatchInlineSnapshot('"import { Relations } from \'remult\'"');
+		expect(info.decorator_import).toMatchInlineSnapshot(
+			"\"import { Relations } from 'remult'\"",
+		);
 	});
 });
