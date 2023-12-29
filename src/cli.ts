@@ -63,8 +63,8 @@ You can use it to replace the default decorators by your own, extending Remult o
 			? process.env["SCHEMAS_PREFIX"] === "NEVER"
 				? "NEVER"
 				: process.env["SCHEMAS_PREFIX"] === "ALWAYS"
-				? "ALWAYS"
-				: "SMART"
+				  ? "ALWAYS"
+				  : "SMART"
 			: "SMART",
 		description: `You want to ALWAYS prefix with schema or NEVER?. By defaut, it's SMART, prefixing only when not public.`,
 	},
@@ -85,6 +85,21 @@ You can use it to replace the default decorators by your own, extending Remult o
 } as const;
 
 async function main() {
+	p.intro("🎉 Welcome to remult-cli!");
+
+	const cmd = yargs(process.argv.slice(2))
+		.scriptName("remult-cli")
+		.command("pull", "pull tables from the database and generate entities")
+		.demandCommand(1, "Please provide a command (pull for example!)")
+		.options(options)
+		.example([
+			[
+				"remult-cli pull --connectionString postgres://user:pass@host:port/db-name",
+			],
+		]);
+
+	const parsed = await cmd.parse();
+
 	const {
 		output,
 		tableProps,
@@ -96,13 +111,7 @@ async function main() {
 		exclude,
 		include,
 		...args
-	} = await yargs(process.argv.slice(2))
-		.options(options)
-		.example([
-			["remult-cli --connectionString postgres://user:pass@host:port/db-name"],
-		]).argv;
-
-	p.intro("🎉 Welcome to remult-cli!");
+	} = parsed;
 
 	args.connectionString ??= await getConnectionStringFromPrompt();
 
@@ -115,43 +124,45 @@ async function main() {
 		}
 	}
 
-	const spinner = p.spinner();
-	spinner.start("Generating everything for you");
+	if (parsed._[0] === "pull") {
+		const spinner = p.spinner();
+		spinner.start("Generating everything for you");
 
-	let provider: SqlDatabase | null = null;
-	try {
-		provider = await createPostgresDataProvider({
-			connectionString: args.connectionString,
-		});
-	} catch (error) {
-		throw new Error(
-			"Could not connect to the database, check your connectionString",
-		);
-	}
-
-	try {
-		const report = await getEntitiesTypescriptPostgres(
-			provider,
-			output,
-			tableProps,
-			defaultOrderBy,
-			customDecoratorsJSON,
-			withEnums,
-			schemas,
-			schemasPrefix,
-			exclude,
-			include,
-		);
-		spinner.stop(`Generation done ${green("✓")}`);
-
-		logReport("full", report);
-	} catch (error: unknown) {
-		if (error instanceof Error) {
-			pCancel(error.message);
+		let provider: SqlDatabase | null = null;
+		try {
+			provider = await createPostgresDataProvider({
+				connectionString: args.connectionString,
+			});
+		} catch (error) {
+			throw new Error(
+				"Could not connect to the database, check your connectionString",
+			);
 		}
-	}
 
-	p.outro(`🎉 Everything is ready!`);
+		try {
+			const report = await getEntitiesTypescriptPostgres(
+				provider,
+				output,
+				tableProps,
+				defaultOrderBy,
+				customDecoratorsJSON,
+				withEnums,
+				schemas,
+				schemasPrefix,
+				exclude,
+				include,
+			);
+			spinner.stop(`Generation done ${green("✓")}`);
+
+			logReport("full", report);
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				pCancel(error.message);
+			}
+		}
+
+		p.outro(`🎉 Everything is ready!`);
+	}
 
 	process.exit(0);
 }

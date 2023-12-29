@@ -21,7 +21,7 @@ Inspired by `prisma db pull`, this tool streamlines the creation of Remult entit
 Generate Remult entities using the default settings:
 
 ```bash
-npx remult-cli
+npx remult-cli pull
 ```
 
 ### Advanced Usage
@@ -36,10 +36,10 @@ npx remult-cli --help
 
 ```bash
 # All entities from two schemas:
-npx remult-cli --schemas auth public
+npx remult-cli pull --schemas auth public
 
 # All entities from all schemas:
-npx remult-cli --schemas '*'
+npx remult-cli pull --schemas '*'
 ```
 
 #### Options
@@ -47,6 +47,9 @@ npx remult-cli --schemas '*'
 - `--connectionString`: Your PostgreSQL database connection string. Only PostgreSQL databases are supported.
 - `--tableProps`: Customize properties for generated tables (default: `allowApiCrud: true`).
 - `--output`: Define the output directory for the generated Remult entities (default: `./src/shared`).
+- `--defaultOrderBy`: Will put a default order by if we see one of this column name. (default: `order,name`).
+- `--customDecorators`: Will replace the default decorator by a custom one. (Should be a stringified JSON object).
+  Let's describe this example: `{"@Fields.string":"@KitFields.string#@kitql/remult"}`, here we replace the default `@Fields.string` decorator by `@KitFields.string` from the `@kitql/remult` import.
 
 ### Environmental Variables
 
@@ -54,14 +57,16 @@ Alternatively, you can utilize a `.env` file to set configuration values. Exampl
 
 ```env
 DATABASE_URL=postgres://user:pass@host:port/db-name
-OUTPUT=./fancy/place
 TABLE_PROPS=allowApiCrud: (r) => r?.authenticated() ?? false
+OUTPUT=./fancy/place
+DEFAULT_ORDER_BY = "order,name,nom,username"
+CUSTOM_DECORATORS = '{"@Fields.string":"@KitFields.string#@kitql/remult","@Fields.dateOnly":"@KitFields.dateOnly#@kitql/remult"}'
 ```
 
 After setting up your `.env` file, run the following command:
 
 ```bash
-npx remult-cli
+npx remult-cli pull
 ```
 
 ## Development
