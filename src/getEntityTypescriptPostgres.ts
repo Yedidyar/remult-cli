@@ -49,12 +49,7 @@ export function buildColumn({
 			decoratorArgsOptions.unshift(`field: '${foreignField}'`);
 		}
 	} else {
-		if (
-			columnName.toLocaleLowerCase() !== columnName ||
-			columnNameTweak ||
-			columnName === "order" ||
-			columnName === "from"
-		) {
+		if (columnNameTweak || columnName === "order" || columnName === "from") {
 			decoratorArgsOptions.unshift(`dbName: '"${columnName}"'`);
 		}
 	}
