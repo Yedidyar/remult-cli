@@ -1,5 +1,11 @@
 # remult-cli
 
+## 0.5.1
+
+### Patch Changes
+
+- 1b21af3: add cmd "pull"
+
 ## 0.5.0
 
 ### Minor Changes
