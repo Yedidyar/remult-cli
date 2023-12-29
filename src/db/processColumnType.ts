@@ -1,70 +1,7 @@
-import { SqlDatabase } from "remult";
-import { DbTable } from "../DbTable.js";
 import { CliReport } from "../report.js";
 import { kababToConstantCase, toPascalCase } from "../utils/case.js";
-
-interface ColumnInfo {
-	columnName: string;
-	columnDefault: string | null;
-	dataType: string;
-	datetimePrecision: number;
-	characterMaximumLength: number;
-	udtName: string;
-}
-
-type DataTypeProcessorFunction = (
-	input: ColumnInfo & {
-		report: CliReport;
-		table: DbTable;
-	},
-) => Partial<{
-	type: string | null;
-	decorator: string;
-	defaultVal: string;
-	decoratorArgsValueType: string;
-	decoratorArgsOptions: string[];
-	enumAdditionalName: string;
-}> | void;
-
-export const processColumnType = (
-	input: ColumnInfo & {
-		report: CliReport;
-		enums: Record<string, string[]>;
-		provider: SqlDatabase;
-		table: DbTable;
-	},
-) => {
-	const {
-		characterMaximumLength,
-		columnDefault,
-		columnName,
-		dataType,
-		udtName,
-		table,
-	} = input;
-
-	const field = dataTypeProcessors[dataType]?.(input);
-
-	if (!field) {
-		console.log("unmanaged", {
-			tableObj: JSON.stringify(table),
-			columnName,
-			data_type: dataType,
-			character_maximum_length: characterMaximumLength,
-			column_default: columnDefault,
-			udt_name: udtName,
-		});
-	}
-
-	return {
-		decorator: field?.decorator ?? "@Fields.string",
-		decoratorArgsValueType: field?.decoratorArgsValueType ?? "",
-		decoratorArgsOptions: field?.decoratorArgsOptions ?? [],
-		type: field?.type === undefined ? "string" : field?.type,
-		defaultVal: field?.defaultVal ?? null,
-		enumAdditionalName: field?.enumAdditionalName ?? null,
-	};
-};
+import { DbTable } from "./DbTable.js";
+import { ColumnInfo, DataTypeProcessorFunction, IDatabase } from "./types.js";
 
 const stringProcessor: DataTypeProcessorFunction = ({ columnName }) => {
 	if (columnName === "id") {
@@ -202,13 +139,15 @@ const intOrNumberProcessor: DataTypeProcessorFunction = ({
 	};
 };
 
-const charProcessor: DataTypeProcessorFunction = ({
-	characterMaximumLength,
-	columnDefault,
-}) => {
-	if (characterMaximumLength == 8 && columnDefault == "('00000000')") {
+const charProcessor: DataTypeProcessorFunction = (input) => {
+	if (
+		input.characterMaximumLength == 8 &&
+		input.columnDefault == "('00000000')"
+	) {
 		return { decorator: "@Fields.dateOnly", type: "Date" };
 	}
+	// fallback
+	return stringProcessor(input);
 };
 
 const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
@@ -257,4 +196,45 @@ const dataTypeProcessors: Record<string, DataTypeProcessorFunction> = {
 
 	ARRAY: arrayProcessor,
 	"USER-DEFINED": enumProcessor,
+};
+
+export const processColumnType = (
+	input: ColumnInfo & {
+		report: CliReport;
+		enums: Record<string, string[]>;
+		db: IDatabase;
+		table: DbTable;
+	},
+) => {
+	const {
+		characterMaximumLength,
+		columnDefault,
+		columnName,
+		dataType,
+		udtName,
+		table,
+	} = input;
+
+	const field = dataTypeProcessors[dataType]?.(input);
+
+	if (!field) {
+		console.log("");
+		console.log("unmanaged", {
+			tableObj: JSON.stringify(table),
+			columnName,
+			data_type: dataType,
+			character_maximum_length: characterMaximumLength,
+			column_default: columnDefault,
+			udt_name: udtName,
+		});
+	}
+
+	return {
+		decorator: field?.decorator ?? "@Fields.string",
+		decoratorArgsValueType: field?.decoratorArgsValueType ?? "",
+		decoratorArgsOptions: field?.decoratorArgsOptions ?? [],
+		type: field?.type === undefined ? "string" : field?.type,
+		defaultVal: field?.defaultVal ?? null,
+		enumAdditionalName: field?.enumAdditionalName ?? null,
+	};
 };

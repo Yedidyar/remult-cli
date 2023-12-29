@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import { expect, test, describe } from "vitest";
-import { buildColumn } from "./getEntityTypescriptPostgres.js";
+import { buildColumn } from "./getEntity.js";
 
 describe("#unit-test build_column", () => {
 	test("string not nullable wo default val", () => {
@@ -93,6 +93,8 @@ describe("#unit-test build_column", () => {
 			type: "string",
 			defaultVal: null,
 		});
-		expect(info.decorator_import).toMatchInlineSnapshot('"import { Relations } from \'remult\'"');
+		expect(info.decorator_import).toMatchInlineSnapshot(
+			"\"import { Relations } from 'remult'\"",
+		);
 	});
 });

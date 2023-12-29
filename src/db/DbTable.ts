@@ -8,8 +8,8 @@ import {
 	strikethrough,
 	red,
 } from "kleur/colors";
-import type { ForeignKey } from "./postgres/commands.js";
-import { toCamelCase, toPascalCase } from "./utils/case.js";
+import type { ForeignKey } from "./types.js";
+import { toCamelCase, toPascalCase } from "../utils/case.js";
 import pluralize from "pluralize";
 
 export interface DbTableForeignKey {
