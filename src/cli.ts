@@ -167,6 +167,8 @@ async function main() {
 	process.exit(0);
 }
 
+function pull() {}
+
 main().catch(console.error);
 
 async function getConnectionStringFromPrompt() {
