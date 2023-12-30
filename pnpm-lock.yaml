@@ -21,8 +21,8 @@ dependencies:
     specifier: ^8.0.0
     version: 8.0.0
   remult:
-    specifier: ^0.24.0
-    version: 0.24.0
+    specifier: ^0.24.1
+    version: 0.24.1
   yargs:
     specifier: ^17.7.2
     version: 17.7.2
@@ -2784,8 +2784,8 @@ packages:
       set-function-name: 2.0.1
     dev: true
 
-  /remult@0.24.0:
-    resolution: {integrity: sha512-kd8rMtV2sKIDybPxlbjH5qQgOz9QbwOToGYKFRyLTmPwNbx9pf+xGQbNUMz82mcqJYHqJhM3Tstp1pNbzLXMWQ==}
+  /remult@0.24.1:
+    resolution: {integrity: sha512-SajaCQ+rEbKJR7tXDWU3UiyKCkRcuC+Ht2hcGhD/r7Posu5qFK19RsgtNHzActH03Zg+fBYP/fff8+XmmfNVnQ==}
     dependencies:
       '@paralleldrive/cuid2': 2.2.2
       reflect-metadata: 0.1.14
