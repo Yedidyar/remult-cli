@@ -8,6 +8,7 @@ import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
 import { green } from "@kitql/helpers";
 import { SqlDatabase } from "remult";
+// @ts-ignore (TODO: waiting for remult v0.24.1 that will fix the type export in esm issue)
 import { createPostgresDataProvider } from "remult/postgres";
 
 dotenv.config();
@@ -74,7 +75,6 @@ You can use it to replace the default decorators by your own, extending Remult o
 		default: process.env["EXCLUDE"]?.split(",").map((c) => c.trim()) ?? [
 			"pg_stat_statements",
 			"pg_stat_statements_info",
-			"_prisma_migrations",
 		],
 	},
 	include: {
