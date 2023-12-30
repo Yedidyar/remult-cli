@@ -1,5 +1,11 @@
 # remult-cli
 
+## 0.5.2
+
+### Patch Changes
+
+- fix typescript issues
+
 ## 0.5.1
 
 ### Patch Changes
