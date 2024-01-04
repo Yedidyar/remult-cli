@@ -25,7 +25,8 @@ integration-test:
     COPY docker-compose.yml ./ 
     COPY +build/dist ./dist
     WITH DOCKER --compose docker-compose.yml
-        RUN sleep 6 && pnpm test:ci
+        RUN while ! docker exec local_pgdb pg_isready; do sleep 1; done ;\ 
+            pnpm test:ci
     END
 
 
