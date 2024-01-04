@@ -1,7 +1,7 @@
 VERSION 0.7
-FROM node:latest
-
-WORKDIR typescript-node-example
+FROM earthly/dind:alpine-3.18
+WORKDIR remult-cli
+RUN apk add nodejs npm
 
 deps:
     COPY package.json pnpm-lock.yaml ./
