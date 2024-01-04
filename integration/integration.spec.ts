@@ -11,8 +11,6 @@ describe('postgres tests', () => {
             expect(rootLs.stdout).toBe("entities\nenums\n")
 
             const entitiesLs = await exec("ls ./output/entities")
-            console.log(entitiesLs, 1);
-
             expect(entitiesLs.stdout).toBe("index.ts\n")
         })
     })
