@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ create-integration-test ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
