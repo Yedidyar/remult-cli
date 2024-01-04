@@ -7,7 +7,7 @@ deps:
     COPY package.json pnpm-lock.yaml ./
     RUN npm install -g pnpm
     RUN pnpm install
-    COPY tsconfig.json ./
+    COPY tsconfig.json .eslintrc .eslintignore ./
     COPY src src
 
 build:
@@ -15,12 +15,16 @@ build:
     RUN pnpm build
     SAVE ARTIFACT dist /dist AS LOCAL dist
 
+lint:
+    FROM +deps
+    RUN pnpm lint
+
 test-setup:
     FROM +deps
     COPY integration integration
 
 
-integration-test:
+test:
     FROM +test-setup
     COPY docker-compose.yml ./ 
     COPY +build/dist ./dist
@@ -32,4 +36,5 @@ integration-test:
 
 all:
     BUILD +build
-    BUILD +integration-test
+    BUILD +lint
+    BUILD +test
