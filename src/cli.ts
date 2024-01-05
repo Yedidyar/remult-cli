@@ -8,7 +8,6 @@ import * as p from "@clack/prompts";
 import { logReport } from "./report.js";
 import { green } from "@kitql/helpers";
 import { SqlDatabase } from "remult";
-// @ts-ignore (TODO: waiting for remult v0.24.1 that will fix the type export in esm issue)
 import { createPostgresDataProvider } from "remult/postgres";
 
 dotenv.config();
