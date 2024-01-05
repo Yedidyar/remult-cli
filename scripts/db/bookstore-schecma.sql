@@ -2,6 +2,17 @@ CREATE SCHEMA bookstore;
 
 SET search_path TO bookstore;
 
+CREATE TYPE book_genre AS ENUM (
+    'Science Fiction',
+    'Fantasy',
+    'Mystery',
+    'Thriller',
+    'Romance',
+    'Non-Fiction',
+    'Historical',
+    'Young Adult'
+);
+
 CREATE TABLE authors (
     author_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -13,6 +24,7 @@ CREATE TABLE books (
     title VARCHAR(255) NOT NULL,
     isbn VARCHAR(13),
     publication_year INT,
+    genre book_genre,
     price DECIMAL(10, 2) NOT NULL,
     stock_quantity INT NOT NULL,
     author_id INT REFERENCES authors(author_id) ON DELETE SET NULL
