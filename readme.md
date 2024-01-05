@@ -95,6 +95,10 @@ pnpm dev
 pnpm start
 ```
 
+5. Run CI locally with 🌍 earthly 🌍
+   - Install [earthly](https://earthly.dev/get-earthly) for yours OS (you can see there yours OS pre-requisites)
+   - Run `earthly -P +all` (you can also add the `--interactive` flag for debugging)
+
 ## Contribution
 
 We welcome contributions from the community! If you find any issues or have ideas for enhancements, please submit bug reports, feature requests, or pull requests through our [GitHub repository](https://github.com/Yedidyar/remult-cli).
