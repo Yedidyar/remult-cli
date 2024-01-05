@@ -35,8 +35,8 @@ devDependencies:
     specifier: ^20.10.5
     version: 20.10.5
   '@types/pluralize':
-    specifier: ^0.0.32
-    version: 0.0.32
+    specifier: ^0.0.33
+    version: 0.0.33
   '@types/yargs':
     specifier: ^17.0.32
     version: 17.0.32
@@ -760,8 +760,8 @@ packages:
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
     dev: true
 
-  /@types/pluralize@0.0.32:
-    resolution: {integrity: sha512-exDkoRIkWJlbRDRmtYDbI3ZUE28HwBwHe5VKn4mvpvMW7qIRDHO6URItErBsBSX7J8/PrDLSOHCcbUMFXwA6CA==}
+  /@types/pluralize@0.0.33:
+    resolution: {integrity: sha512-JOqsl+ZoCpP4e8TDke9W79FDcSgPAR0l6pixx2JHkhnRjvShyYiAYw2LVsnA7K08Y6DeOnaU6ujmENO4os/cYg==}
     dev: true
 
   /@types/semver@7.5.6:
