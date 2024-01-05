@@ -1,16 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { promisify } from "util";
 import { exec as child_process_exec } from "child_process";
-const genId = () => {
-    let count = 10
-    return () => {
-        count++
-        return `output${count}`
-    }
-}
-const getOutput = genId()
+import { genId } from "../src/utils/genId"
+const getOutput = genId("output")
 const exec = promisify(child_process_exec);
-const connctionString = "postgres://postgres:postgres@localhost:5432"
+const connectionString = "postgres://postgres:postgres@localhost:5432"
 const lsOutputToArray = (stdout: string) => stdout.slice(0, -1).split("\n")
 
 describe("postgres tests", () => {
@@ -18,7 +12,7 @@ describe("postgres tests", () => {
         const output = getOutput()
         test("when db is empty shoud return bare file structure", async () => {
             await exec(
-                `pnpm start pull --output ./${output} --connectionString ${connctionString}`,
+                `pnpm start pull --output ./${output} --connectionString ${connectionString}`,
             );
             const rootLs = await exec(`ls ${output}`);
 
@@ -32,7 +26,7 @@ describe("postgres tests", () => {
         test("when pull with schemas flag", async () => {
             const output = getOutput()
             await exec(
-                `pnpm start pull --output ./${output} --connectionString ${connctionString}/bookstore_db --schemas bookstore`,
+                `pnpm start pull --output ./${output} --connectionString ${connectionString}/bookstore_db --schemas bookstore`,
             );
             const entitiesLs = await exec(`ls ./${output}/entities`);
             expect(lsOutputToArray(entitiesLs.stdout)).toStrictEqual([
