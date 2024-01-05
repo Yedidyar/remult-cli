@@ -1,22 +1,25 @@
 import { describe, expect, test } from "vitest";
 import { promisify } from "util";
 import { exec as child_process_exec } from "child_process";
-import { genId } from "../src/utils/genId"
-const getOutput = genId("integration-test-output")
+import { genId } from "../src/utils/genId";
+const getOutput = genId("integration-test-output");
 const exec = promisify(child_process_exec);
-const connectionString = "postgres://postgres:postgres@localhost:5432"
-const lsOutputToArray = (stdout: string) => stdout.slice(0, -1).split("\n")
+const connectionString = "postgres://postgres:postgres@localhost:5432";
+const lsOutputToArray = (stdout: string) => stdout.slice(0, -1).split("\n");
 
 describe("postgres tests", () => {
     describe("check that file structure is correct", () => {
-        const output = getOutput()
+        const output = getOutput();
         test("when db is empty should return bare file structure", async () => {
             await exec(
                 `pnpm start pull --output ./${output} --connectionString ${connectionString}`,
             );
             const rootLs = await exec(`ls ${output}`);
 
-            expect(lsOutputToArray(rootLs.stdout)).toStrictEqual(["entities", "enums"]);
+            expect(lsOutputToArray(rootLs.stdout)).toStrictEqual([
+                "entities",
+                "enums",
+            ]);
 
             const entitiesLs = await exec(`ls ./${output}/entities`);
             expect(lsOutputToArray(entitiesLs.stdout)).toStrictEqual(["index.ts"]);
@@ -24,7 +27,7 @@ describe("postgres tests", () => {
     });
     describe("bookstore schema", () => {
         test("when pull with schemas flag", async () => {
-            const output = getOutput()
+            const output = getOutput();
             await exec(
                 `pnpm start pull --output ./${output} --connectionString ${connectionString}/bookstore_db --schemas bookstore`,
             );
@@ -37,7 +40,9 @@ describe("postgres tests", () => {
                 "Bookstore_OrderItem.ts",
                 "index.ts",
             ]);
-            const authorFile = await exec(`cat ./${output}/entities/Bookstore_Author.ts`);
+            const authorFile = await exec(
+                `cat ./${output}/entities/Bookstore_Author.ts`,
+            );
 
             expect(authorFile.stdout).toStrictEqual(
                 `import { Entity, Fields } from 'remult'
@@ -64,11 +69,13 @@ export class Bookstore_Author {
 	@Relations.toMany(() => Bookstore_Book)
 	books?: Bookstore_Book[]
 }
-`)
+`,
+            );
 
             const bookFile = await exec(`cat ./${output}/entities/Bookstore_Book.ts`);
 
-            expect(bookFile.stdout).toStrictEqual(`import { Entity, Field, Fields } from 'remult'
+            expect(bookFile.stdout)
+                .toStrictEqual(`import { Entity, Field, Fields } from 'remult'
 import { Relations } from 'remult'
 import { Bookstore_Author } from '.'
 import { Bookstore_OrderItem } from '.'
@@ -107,9 +114,143 @@ export class Bookstore_Book {
 	@Relations.toMany(() => Bookstore_OrderItem)
 	orderItems?: Bookstore_OrderItem[]
 }
-`)
+`);
 
+            const customerFile = await exec(
+                `cat ./${output}/entities/Bookstore_Customer.ts`,
+            );
+            expect(customerFile.stdout)
+                .toStrictEqual(`import { Entity, Fields, Validators } from 'remult'
+import { Relations } from 'remult'
+import { Bookstore_Order } from '.'
 
+@Entity<Bookstore_Customer>('customers', {
+	allowApiCrud: true,
+	dbName: 'bookstore.customers',
+	id: { customer_id: true }
+})
+export class Bookstore_Customer {
+	@Fields.autoIncrement()
+	customer_id!: number
+
+	@Fields.string()
+	first_name!: string
+
+	@Fields.string()
+	last_name!: string
+
+	@Fields.string({ validate: [Validators.uniqueOnBackend], inputType: 'email' })
+	email!: string
+
+	@Fields.string({ allowNull: true })
+	address?: string
+
+	@Fields.dateOnly()
+	join_date = new Date()
+
+  // Relations toMany
+	@Relations.toMany(() => Bookstore_Order)
+	orders?: Bookstore_Order[]
+}
+`);
+
+            const orderFile = await exec(
+                `cat ./${output}/entities/Bookstore_Order.ts`,
+            );
+            expect(orderFile.stdout)
+                .toStrictEqual(`import { Entity, Field, Fields } from 'remult'
+import { Relations } from 'remult'
+import { Bookstore_Customer } from '.'
+import { Bookstore_OrderItem } from '.'
+
+@Entity<Bookstore_Order>('orders', {
+	allowApiCrud: true,
+	dbName: 'bookstore.orders',
+	id: { order_id: true, customer_id: true }
+})
+export class Bookstore_Order {
+	@Fields.autoIncrement()
+	order_id!: number
+
+	@Fields.date()
+	order_date = new Date()
+
+	@Fields.integer({ allowNull: true })
+	customer_id?: number
+
+	@Relations.toOne(() => Bookstore_Customer, { field: 'customer_id' })
+	customer?: Bookstore_Customer
+
+	@Fields.number()
+	total_amount!: number
+
+  // Relations toMany
+	@Relations.toMany(() => Bookstore_OrderItem)
+	orderItems?: Bookstore_OrderItem[]
+}
+`);
+
+            const orderItemFile = await exec(
+                `cat ./${output}/entities/Bookstore_OrderItem.ts`,
+            );
+            expect(orderItemFile.stdout)
+                .toStrictEqual(`import { Entity, Field, Fields } from 'remult'
+import { Relations } from 'remult'
+import { Bookstore_Order } from '.'
+import { Bookstore_Book } from '.'
+
+@Entity<Bookstore_OrderItem>('orderItems', {
+	allowApiCrud: true,
+	dbName: 'bookstore.order_items',
+	id: { order_item_id: true, order_id: true, book_id: true }
+})
+export class Bookstore_OrderItem {
+	@Fields.autoIncrement()
+	order_item_id!: number
+
+	@Fields.integer({ allowNull: true })
+	order_id?: number
+
+	@Relations.toOne(() => Bookstore_Order, { field: 'order_id' })
+	order?: Bookstore_Order
+
+	@Fields.integer({ allowNull: true })
+	book_id?: number
+
+	@Relations.toOne(() => Bookstore_Book, { field: 'book_id' })
+	book?: Bookstore_Book
+
+	@Fields.integer()
+	quantity!: number
+
+	@Fields.number()
+	price_at_time_of_order!: number
+}
+`);
+
+            const indexFile = await exec(`cat ./${output}/entities/index.ts`);
+            expect(indexFile.stdout)
+                .toStrictEqual(`import { Bookstore_Author } from './Bookstore_Author'
+import { Bookstore_Book } from './Bookstore_Book'
+import { Bookstore_Customer } from './Bookstore_Customer'
+import { Bookstore_Order } from './Bookstore_Order'
+import { Bookstore_OrderItem } from './Bookstore_OrderItem'
+
+export const entities = [
+	Bookstore_Author,
+  Bookstore_Book,
+  Bookstore_Customer,
+  Bookstore_Order,
+  Bookstore_OrderItem
+]
+
+export {
+	Bookstore_Author,
+  Bookstore_Book,
+  Bookstore_Customer,
+  Bookstore_Order,
+  Bookstore_OrderItem
+}`);
         });
     });
 });
