@@ -2,15 +2,15 @@ import { describe, expect, test } from "vitest";
 import { promisify } from "util";
 import { exec as child_process_exec } from "child_process";
 import { genId } from "../src/utils/genId"
-const getOutput = genId("output")
+const getOutput = genId("integration-test-output")
 const exec = promisify(child_process_exec);
 const connectionString = "postgres://postgres:postgres@localhost:5432"
 const lsOutputToArray = (stdout: string) => stdout.slice(0, -1).split("\n")
 
 describe("postgres tests", () => {
-    describe("check that file stracture is correct", () => {
+    describe("check that file structure is correct", () => {
         const output = getOutput()
-        test("when db is empty shoud return bare file structure", async () => {
+        test("when db is empty should return bare file structure", async () => {
             await exec(
                 `pnpm start pull --output ./${output} --connectionString ${connectionString}`,
             );
@@ -45,26 +45,70 @@ import { Relations } from 'remult'
 import { Bookstore_Book } from '.'
 
 @Entity<Bookstore_Author>('authors', {
-\tallowApiCrud: true,
-\tdbName: 'bookstore.authors',
-\tdefaultOrderBy: { name: 'asc' },
-\tid: { author_id: true }
+	allowApiCrud: true,
+	dbName: 'bookstore.authors',
+	defaultOrderBy: { name: 'asc' },
+	id: { author_id: true }
 })
 export class Bookstore_Author {
-\t@Fields.autoIncrement()
-\tauthor_id!: number
+	@Fields.autoIncrement()
+	author_id!: number
 
-\t@Fields.string()
-\tname!: string
+	@Fields.string()
+	name!: string
 
-\t@Fields.string({ allowNull: true })
-\tbio?: string
+	@Fields.string({ allowNull: true })
+	bio?: string
 
   // Relations toMany
-\t@Relations.toMany(() => Bookstore_Book)
-\tbooks?: Bookstore_Book[]
+	@Relations.toMany(() => Bookstore_Book)
+	books?: Bookstore_Book[]
 }
 `)
+
+            const bookFile = await exec(`cat ./${output}/entities/Bookstore_Book.ts`);
+
+            expect(bookFile.stdout).toStrictEqual(`import { Entity, Field, Fields } from 'remult'
+import { Relations } from 'remult'
+import { Bookstore_Author } from '.'
+import { Bookstore_OrderItem } from '.'
+
+@Entity<Bookstore_Book>('books', {
+	allowApiCrud: true,
+	dbName: 'bookstore.books',
+	id: { book_id: true, author_id: true }
+})
+export class Bookstore_Book {
+	@Fields.autoIncrement()
+	book_id!: number
+
+	@Fields.string()
+	title!: string
+
+	@Fields.string({ allowNull: true })
+	isbn?: string
+
+	@Fields.integer({ allowNull: true })
+	publication_year?: number
+
+	@Fields.number()
+	price!: number
+
+	@Fields.integer()
+	stock_quantity!: number
+
+	@Fields.integer({ allowNull: true })
+	author_id?: number
+
+	@Relations.toOne(() => Bookstore_Author, { field: 'author_id' })
+	author?: Bookstore_Author
+
+  // Relations toMany
+	@Relations.toMany(() => Bookstore_OrderItem)
+	orderItems?: Bookstore_OrderItem[]
+}
+`)
+
 
         });
     });
