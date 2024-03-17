@@ -26,13 +26,13 @@ test-setup:
 
 test:
     FROM +test-setup
-    COPY docker-compose.yml ./ 
+    COPY docker-compose.yml ./
     COPY +build/dist ./dist
     WITH DOCKER --compose docker-compose.yml
-        RUN while ! docker exec local_pgdb pg_isready; do sleep 1; done ;\ 
+        RUN while ! docker exec local_pgdb pg_isready; do sleep 1; done ;\
             docker cp ./scripts/db/bookstore-schecma.sql local_pgdb:./bookstore-schecma.sql &&\
             docker exec local_pgdb psql -U postgres -d bookstore_db -a -f bookstore-schecma.sql &&\
-            pnpm test:ci 
+            pnpm test:ci
     END
 
 

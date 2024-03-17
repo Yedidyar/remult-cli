@@ -31,8 +31,8 @@ describe("postgres tests", () => {
 			await exec(
 				`pnpm start pull --output ./${output} --connectionString ${connectionString}/bookstore_db --schemas bookstore`,
 			);
-			const entitiesDir = `./${output}/entities`
-			const enumsDir = `./${output}/enums`
+			const entitiesDir = `./${output}/entities`;
+			const enumsDir = `./${output}/enums`;
 
 			const entitiesLs = await exec(`ls ${entitiesDir}`);
 			expect(lsOutputToArray(entitiesLs.stdout)).toStrictEqual([
@@ -50,11 +50,9 @@ describe("postgres tests", () => {
 				"index.ts",
 			]);
 
-
-			const bookGenreFile = await exec(
-				`cat ${enumsDir}/BookGenre.ts`,
-			);
-			expect(bookGenreFile.stdout).toStrictEqual(`import { ValueListFieldType } from 'remult'
+			const bookGenreFile = await exec(`cat ${enumsDir}/BookGenre.ts`);
+			expect(bookGenreFile.stdout)
+				.toStrictEqual(`import { ValueListFieldType } from 'remult'
 
 @ValueListFieldType()
 export class BookGenre {
@@ -69,11 +67,9 @@ export class BookGenre {
 
   constructor(public id: string, public caption: string) {}
 }
-`)
+`);
 
-			const authorFile = await exec(
-				`cat ${entitiesDir}/Bookstore_Author.ts`,
-			);
+			const authorFile = await exec(`cat ${entitiesDir}/Bookstore_Author.ts`);
 			expect(authorFile.stdout).toStrictEqual(
 				`import { Entity, Fields } from 'remult'
 import { Relations } from 'remult'
@@ -187,9 +183,7 @@ export class Bookstore_Customer {
 }
 `);
 
-			const orderFile = await exec(
-				`cat ${entitiesDir}/Bookstore_Order.ts`,
-			);
+			const orderFile = await exec(`cat ${entitiesDir}/Bookstore_Order.ts`);
 			expect(orderFile.stdout)
 				.toStrictEqual(`import { Entity, Field, Fields } from 'remult'
 import { Relations } from 'remult'
