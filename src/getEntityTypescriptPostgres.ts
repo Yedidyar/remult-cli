@@ -305,7 +305,7 @@ export {
 					return `import { ${e} } from './${e}'`;
 				})
 				.join("\n")}
-		
+
 export {
   ${sortedEnums.map((c) => c).join(",\n  ")}
 }`,
@@ -388,7 +388,7 @@ async function getEntityTypescriptPostgres(
 			)
 		) {
 			usesValidators = true;
-			decoratorArgsOptions.push("validate: [Validators.uniqueOnBackend]");
+			decoratorArgsOptions.push("validate: [Validators.unique]");
 		}
 
 		const decorator = customDecorators[decoratorInfered] ?? decoratorInfered;
