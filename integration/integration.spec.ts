@@ -168,7 +168,7 @@ export class Bookstore_Customer {
 	@Fields.string()
 	last_name!: string
 
-	@Fields.string({ validate: [Validators.uniqueOnBackend], inputType: 'email' })
+	@Fields.string({ validate: [Validators.unique], inputType: 'email' })
 	email!: string
 
 	@Fields.string({ allowNull: true })
