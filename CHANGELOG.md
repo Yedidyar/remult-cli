@@ -1,5 +1,11 @@
 # remult-cli
 
+## 0.5.3
+
+### Patch Changes
+
+- remove use of deprecated uniqueOnBackend and useremove use of unique
+
 ## 0.5.2
 
 ### Patch Changes
