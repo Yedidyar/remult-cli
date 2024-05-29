@@ -3,3 +3,4 @@ dist
 src/shared
 *.env
 integration-test-output*
+.idea

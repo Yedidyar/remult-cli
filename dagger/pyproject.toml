@@ -1,0 +1,18 @@
+[project]
+name = "main"
+version = "0.0.0"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.poetry]
+name = "dagger-io"
+description = "A client package for running Dagger pipelines in Python."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    "hello"
+]
+version = "0.0.0"
