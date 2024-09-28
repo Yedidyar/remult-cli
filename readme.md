@@ -10,6 +10,11 @@
   </a>
 </div>
 
+# ⛔Deprecated⛔
+Use Remult Kit instead.
+
+<br/>
+
 `remult-cli` is a command-line tool designed to simplify the process of generating [Remult](https://remult.dev/) entities from a PostgreSQL database.
 
 Inspired by `prisma db pull`, this tool streamlines the creation of Remult entities, making database integration smoother and more efficient.
