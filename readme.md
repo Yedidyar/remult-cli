@@ -13,6 +13,8 @@
 # ⛔Deprecated⛔
 Use [Remult Kit](https://www.npmjs.com/package/remult-kit) instead.
 
+[Docs](https://remult.dev/docs/entities-codegen-from-db-schema)
+
 <br/>
 
 `remult-cli` is a command-line tool designed to simplify the process of generating [Remult](https://remult.dev/) entities from a PostgreSQL database.
