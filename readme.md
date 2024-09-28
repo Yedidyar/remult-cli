@@ -11,7 +11,7 @@
 </div>
 
 # ⛔Deprecated⛔
-Use Remult Kit instead.
+Use [Remult Kit](https://www.npmjs.com/package/remult-kit) instead.
 
 <br/>
 
