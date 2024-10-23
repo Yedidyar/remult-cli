@@ -4,7 +4,7 @@ import { exec as child_process_exec } from "child_process";
 import { genId } from "../src/utils/genId";
 const getOutput = genId("integration-test-output");
 const exec = promisify(child_process_exec);
-const connectionString = "postgres://postgres:postgres@localhost:5432";
+const connectionString = "postgres://postgres:postgres@db:5432";
 const lsOutputToArray = (stdout: string) => stdout.slice(0, -1).split("\n");
 
 describe("postgres tests", () => {

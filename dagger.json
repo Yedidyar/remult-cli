@@ -1,0 +1,6 @@
+{
+  "name": "remult-cli",
+  "sdk": "python",
+  "source": "dagger",
+  "engineVersion": "v0.11.5"
+}

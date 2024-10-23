@@ -20,9 +20,9 @@ jobs:
           branch="${GITHUB_REF##*/}"
         fi
         git checkout -b "$branch" || true
-    - name: Download latest earthly
-      run: "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.7.23/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
-    - name: Earthly version
-      run: earthly --version
-    - name: Run build
-      run: earthly --ci --allow-privileged +all
+    - name: Call Dagger Function
+      uses: dagger/dagger-for-github@v5
+      with:
+        version: "latest"
+        verb: call
+        args: test --source=.
